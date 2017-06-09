@@ -11,18 +11,13 @@ import (
 	"strconv"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/gin-gonic/gin"
-	"github.com/gorilla/mux"
+	"github.com/labstack/echo"
 	"github.com/olahol/melody"
-	"github.com/rjeczalik/notify"
 	"github.com/shurcooL/github_flavored_markdown"
-
-	emoji "./emoji"
 )
 
 var port int
 var dirPath string
-var ei chan notify.EventInfo
 
 type FileContent struct {
 	Title string `json:"title"`
@@ -31,13 +26,15 @@ type FileContent struct {
 
 func init() {
 	flag.IntVar(&port, "port", 3000, "port to serve on")
-
 }
 
 func main() {
 	flag.Parse()
 	dirPath = mustMakeDirPath()
 	mm := melody.New()
+
+	var currentFile string = filepath.Join(dirPath, "README.md")
+
 	mm.HandleConnect(func(s *melody.Session) {
 		log.Println("session connected")
 		sidebar, e := getReadFile(filepath.Join(dirPath, "_Sidebar.md"))
@@ -48,11 +45,11 @@ func main() {
 		if e != nil {
 			log.Println(e)
 		}
-		readme, e := getReadFile(filepath.Join(dirPath, "README.md"))
+		curFile, e := getReadFile(currentFile)
 		if e != nil {
 			log.Println(e)
 		}
-		for _, f := range []FileContent{sidebar, footer, readme} {
+		for _, f := range []FileContent{sidebar, footer, curFile} {
 			if (f == FileContent{}) {
 				continue
 			}
@@ -67,6 +64,7 @@ func main() {
 	mm.HandleDisconnect(func(s *melody.Session) {
 		log.Println("session disconnected")
 	})
+
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Fatal(err)
@@ -77,46 +75,54 @@ func main() {
 			select {
 			case event := <-watcher.Events:
 				log.Println("event:", event)
-				if event.Op&fsnotify.Write == fsnotify.Write {
-					log.Println("modified file:", event.Name)
-					f := getFilePathFromParam(event.Name)
-					m, e := getReadFile(f)
-					if e != nil {
-						log.Println(e)
-						return
-					}
-					b, e := json.Marshal(m)
-					if e != nil {
-						log.Println(e)
-						return
-					}
-					mm.Broadcast(b)
+				// if event.Op&fsnotify.Write == fsnotify.Write {
+				log.Println("modified file:", event.Name)
+				f := getFilePathFromParam(event.Name)
+				currentFile = f
+				m, e := getReadFile(f)
+				if e != nil {
+					log.Println(e)
+					continue
 				}
+				b, e := json.Marshal(m)
+				if e != nil {
+					log.Println(e)
+					continue
+				}
+				log.Println("broadcasting", string(b), mm)
+				mm.Broadcast(b)
+				// }
 			case err := <-watcher.Errors:
 				log.Println("error:", err)
 			}
 		}
 	}()
-
+	// Sometimes on refresh watcher stops silently.
 	err = watcher.Add(dirPath)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	r := gin.Default()
-	r.GET("/", func(c *gin.Context) {
-		http.ServeFile(c.Writer, c.Request, "index.html")
-	})
-	// Serve the "/assets/gfm.css" file.
+	r := echo.New()
+	r.File("/", "index.html")
+	// Static assets.
 	r.Static("/assets", "./assets")
 	r.Static("/node_modules/primer-css/build", "./node_modules/primer-css/build")
-	r.GET("/0", func(c *gin.Context) {
-		mm.HandleRequest(c.Writer, c.Request)
+	// Websocket.
+	r.GET("/x/0", func(c echo.Context) error {
+		mm.HandleRequest(c.Response(), c.Request())
+		return nil
+	})
+	// Any other filename.
+	r.Any("/:filename", func(c echo.Context) error {
+		filename := c.Param("filename")
+		filename = getFilePathFromParam(filename)
+		currentFile = filename
+		return c.Redirect(http.StatusMovedPermanently, "/")
 	})
 
 	log.Println("Listening...", port)
-	r.Run(":" + strconv.Itoa(port))
-
+	r.Logger.Fatal(r.Start(":" + strconv.Itoa(port)))
 }
 
 func mustMakeDirPath() string {
@@ -151,23 +157,11 @@ func getFilePathFromParam(param string) string {
 	if !(filepath.Ext(filename) == ".md") {
 		filename = filename + ".md"
 	}
-	return filename
-}
 
-func deliverMarkdownedFileFromParams(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	f := getFilePathFromParam(params["filename"])
-	m, e := getReadFile(f)
-	if e != nil {
-		log.Println(e)
-		return
+	if !filepath.IsAbs(filename) {
+		filename, _ = filepath.Abs(filename)
 	}
-	b, e := json.Marshal(m)
-	if e != nil {
-		log.Println(e)
-		return
-	}
-	w.Write(b)
+	return filename
 }
 
 func getReadFile(path string) (FileContent, error) {
@@ -178,6 +172,7 @@ func getReadFile(path string) (FileContent, error) {
 	}
 	return FileContent{
 		Title: filepath.Base(path), // TODO parse File-Name.md syntax => File Name
-		Body:  emoji.Emojitize(string(github_flavored_markdown.Markdown(fileBytes))),
+		// Body:  emoji.Emojitize(string(github_flavored_markdown.Markdown(fileBytes))),
+		Body: string(github_flavored_markdown.Markdown(fileBytes)),
 	}, nil
 }

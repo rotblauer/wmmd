@@ -3,12 +3,23 @@
 		<meta charset="utf-8">
 		<link rel="stylesheet" type="text/css" href="/node_modules/primer-css/build/build.css">
 		<link href="/assets/gfm.css" media="all" rel="stylesheet" type="text/css" />
+
 		<link href="//cdnjs.cloudflare.com/ajax/libs/octicons/2.1.2/octicons.css" media="all" rel="stylesheet" type="text/css" />
+		<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/emojify.js/1.1.0/css/basic/emojify.min.css" />
+		<script src="//cdnjs.cloudflare.com/ajax/libs/emojify.js/1.1.0/js/emojify.min.js"></script>
 		<style>
 			body {
 				margin-top: 20px;
 				margin-bottom: 20px;
 				min-height: 100vh;
+			}
+			.content {
+				padding: 10px;
+			}
+			#last-edited {
+				margin-top: -20px;
+				font-weight: 300;
+				color: darkgray;
 			}
 			#wiki-style {
 				min-height: 100vh;
@@ -17,35 +28,57 @@
 			#content-sidebar {
 				border: 1px solid lightgray;
 				border-radius: 5px;
-				padding: 10px;
 			}
 			#content-footer {
 				position: absolute;
+				margin-top: 30px;
 				bottom: 30px;
 				border: 1px solid lightgray;
 				border-radius: 5px;
-				padding: 10px;
+			}
+			.hud {
+				position: fixed;
+				top: 0px;
+				padding: 2px;
+				background-color: lightgray;
+				color: white;
+				font-family: menlo;
+				line-height: 1em;
+			}
+			#hud-left {
+				left: 0px;
+			}
+			#hud-right {
+				right: 0px;
 			}
 		</style>
 		<script src="/assets/app.js"></script>
 	</head>
 	<body onload="load()">
+	<div id="hud-left" class="hud">
+		<span id="hud-filename"></span>
+	</div>
+	<div id="hud-right" class="hud">
+		<span id="hud-wiki" onclick="toggleWikiStatus()">
+			Wiki: <span id="wiki-status"></span>
+		</span>
+	</div>
 		<div id="wiki-style" class="container">
 
-			<div class="columns" style="margin-bottom: 30px;">
+			<div id="content-header-holder" class="columns" style="margin-bottom: 30px;">
 				<div class="column markdown-body">
-					<code id="content-header">
-						Index
-					</code>
+					<p id="content-header" class="lead" style="font-size: 2.1em; font-weight: 475;">
+					</p>
+					<p id="last-edited"></p>
 				</div>
 				
 			</div>
 			<div class="columns">
-				<div id="content-body" class="four-fifths column markdown-body"></div>
-				<div id="content-sidebar" class="one-fifth column markdown-body"></div>
+				<div id="content-body" class="content four-fifths column markdown-body"></div>
+				<div id="content-sidebar" class="content one-fifth column markdown-body" style="display: none;"></div>
 			</div>
 			<div class="columns">
-				<div id="content-footer" class="column markdown-body"></div>
+				<div id="content-footer" class="blankslate content column markdown-body" style="display: none;"></div>
 			</div>
 		</div>
 		<!-- <div id="standard-style" class="container" style="display: none;">

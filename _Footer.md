@@ -1,1 +1,1 @@
-:heart: Stay Classy
+:heart: Stay classy
