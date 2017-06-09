@@ -1,9 +1,9 @@
 # Wub
 
-> Delivers livereloaded markdown files for a directory.
-
-**hello**
+> Delivers livereloaded markdown files for a directory, #bringyourown$editor
 
 :smile:
 
-I changed.
+
+
+

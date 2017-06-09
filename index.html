@@ -1,30 +1,55 @@
 <html>
-<head>
-	<!-- <script src="./app.js"></script> -->
-</head>
+	<head>
+		<meta charset="utf-8">
+		<link rel="stylesheet" type="text/css" href="/node_modules/primer-css/build/build.css">
+		<link href="/assets/gfm.css" media="all" rel="stylesheet" type="text/css" />
+		<link href="//cdnjs.cloudflare.com/ajax/libs/octicons/2.1.2/octicons.css" media="all" rel="stylesheet" type="text/css" />
+		<style>
+			body {
+				margin-top: 20px;
+				margin-bottom: 20px;
+				min-height: 100vh;
+			}
+			#wiki-style {
+				min-height: 100vh;
+				position: relative;
+			}
+			#content-sidebar {
+				border: 1px solid lightgray;
+				border-radius: 5px;
+				padding: 10px;
+			}
+			#content-footer {
+				position: absolute;
+				bottom: 30px;
+				border: 1px solid lightgray;
+				border-radius: 5px;
+				padding: 10px;
+			}
+		</style>
+		<script src="/assets/app.js"></script>
+	</head>
+	<body onload="load()">
+		<div id="wiki-style" class="container">
 
-<body>
-
-<div id="content-header">
-	Index
-</div>
-<div id="content-body"></div>
-<div id="content-sider"></div>
+			<div class="columns" style="margin-bottom: 30px;">
+				<div class="column markdown-body">
+					<code id="content-header">
+						Index
+					</code>
+				</div>
+				
+			</div>
+			<div class="columns">
+				<div id="content-body" class="four-fifths column markdown-body"></div>
+				<div id="content-sidebar" class="one-fifth column markdown-body"></div>
+			</div>
+			<div class="columns">
+				<div id="content-footer" class="column markdown-body"></div>
+			</div>
+		</div>
+		<!-- <div id="standard-style" class="container" style="display: none;">
+		</div> -->
+	</body>
 	
-</body>
-
-<script>
-	console.log("hello");
-	var body = document.getElementById("content-body");
-	var header = document.getElementById("content-header");
-	var sider = document.getElementById("content-sider");
-	var ws = new WebSocket("ws://" + window.location.host + "/0");
-	ws.onmessage = function (msg) {
-		var parsed = JSON.parse(msg.data);
-		var fileBody = parsed.body;
-		body.innerHTML = fileBody;
-		content.innerHTML = fileBody;
-
-	}
-</script>
 </html>

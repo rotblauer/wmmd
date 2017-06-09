@@ -16,6 +16,8 @@ import (
 	"github.com/olahol/melody"
 	"github.com/rjeczalik/notify"
 	"github.com/shurcooL/github_flavored_markdown"
+
+	emoji "./emoji"
 )
 
 var port int
@@ -36,6 +38,35 @@ func main() {
 	flag.Parse()
 	dirPath = mustMakeDirPath()
 	mm := melody.New()
+	mm.HandleConnect(func(s *melody.Session) {
+		log.Println("session connected")
+		sidebar, e := getReadFile(filepath.Join(dirPath, "_Sidebar.md"))
+		if e != nil {
+			log.Println(e)
+		}
+		footer, e := getReadFile(filepath.Join(dirPath, "_Footer.md"))
+		if e != nil {
+			log.Println(e)
+		}
+		readme, e := getReadFile(filepath.Join(dirPath, "README.md"))
+		if e != nil {
+			log.Println(e)
+		}
+		for _, f := range []FileContent{sidebar, footer, readme} {
+			if (f == FileContent{}) {
+				continue
+			}
+			j, e := json.Marshal(f)
+			if e != nil {
+				log.Println(e)
+				continue
+			}
+			mm.Broadcast(j)
+		}
+	})
+	mm.HandleDisconnect(func(s *melody.Session) {
+		log.Println("session disconnected")
+	})
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Fatal(err)
@@ -48,7 +79,6 @@ func main() {
 				log.Println("event:", event)
 				if event.Op&fsnotify.Write == fsnotify.Write {
 					log.Println("modified file:", event.Name)
-
 					f := getFilePathFromParam(event.Name)
 					m, e := getReadFile(f)
 					if e != nil {
@@ -77,6 +107,9 @@ func main() {
 	r.GET("/", func(c *gin.Context) {
 		http.ServeFile(c.Writer, c.Request, "index.html")
 	})
+	// Serve the "/assets/gfm.css" file.
+	r.Static("/assets", "./assets")
+	r.Static("/node_modules/primer-css/build", "./node_modules/primer-css/build")
 	r.GET("/0", func(c *gin.Context) {
 		mm.HandleRequest(c.Writer, c.Request)
 	})
@@ -145,6 +178,6 @@ func getReadFile(path string) (FileContent, error) {
 	}
 	return FileContent{
 		Title: filepath.Base(path), // TODO parse File-Name.md syntax => File Name
-		Body:  string(github_flavored_markdown.Markdown(fileBytes)),
+		Body:  emoji.Emojitize(string(github_flavored_markdown.Markdown(fileBytes))),
 	}, nil
 }

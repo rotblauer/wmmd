@@ -1,2 +1,3 @@
-do antyhing
-asdf:
+# License
+
+MIT
