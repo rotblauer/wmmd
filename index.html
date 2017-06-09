@@ -7,31 +7,36 @@
 		<link href="//cdnjs.cloudflare.com/ajax/libs/octicons/2.1.2/octicons.css" media="all" rel="stylesheet" type="text/css" />
 		<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/emojify.js/1.1.0/css/basic/emojify.min.css" />
 		<script src="//cdnjs.cloudflare.com/ajax/libs/emojify.js/1.1.0/js/emojify.min.js"></script>
+		<!-- for goddamn scrolling -->
+		<script   src="https://code.jquery.com/jquery-3.2.1.min.js"   integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="   crossorigin="anonymous"></script>
 		<style>
-			body {
-				margin-top: 20px;
-				margin-bottom: 20px;
-				min-height: 100vh;
+			#box {
+				padding: 30px;
+				min-height: 500px;
+			}
+			.change {
+				background-color: green;
+				z-index: 1000;
+				color: white;
+				font-weight: 700;
 			}
 			.content {
-				padding: 10px;
+				padding: 30px;
 			}
 			#last-edited {
 				margin-top: -20px;
 				font-weight: 300;
 				color: darkgray;
 			}
-			#wiki-style {
-				min-height: 100vh;
-				position: relative;
-			}
 			#content-sidebar {
 				border: 1px solid lightgray;
 				border-radius: 5px;
+				font-size: 90%;
 			}
 			#content-footer {
-				position: absolute;
-				margin-top: 30px;
+				position: relative;
+
+				margin-top: 60px;
 				bottom: 30px;
 				border: 1px solid lightgray;
 				border-radius: 5px;
@@ -52,7 +57,7 @@
 				right: 0px;
 			}
 		</style>
-		<script src="/assets/app.js"></script>
+		<script src="/assets/app.js?n=1"></script>
 	</head>
 	<body onload="load()">
 	<div id="hud-left" class="hud">
@@ -60,10 +65,10 @@
 	</div>
 	<div id="hud-right" class="hud">
 		<span id="hud-wiki" onclick="toggleWikiStatus()">
-			Wiki: <span id="wiki-status"></span>
+			[w] Wiki: <span id="wiki-status"></span>
 		</span>
 	</div>
-		<div id="wiki-style" class="container">
+		<div id="box" class="container">
 
 			<div id="content-header-holder" class="columns" style="margin-bottom: 30px;">
 				<div class="column markdown-body">
@@ -78,7 +83,7 @@
 				<div id="content-sidebar" class="content one-fifth column markdown-body" style="display: none;"></div>
 			</div>
 			<div class="columns">
-				<div id="content-footer" class="blankslate content column markdown-body" style="display: none;"></div>
+				<div id="content-footer" class="blankslate four-fifths content column markdown-body" style="display: none;"></div>
 			</div>
 		</div>
 		<!-- <div id="standard-style" class="container" style="display: none;">

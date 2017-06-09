@@ -14,14 +14,24 @@ import (
 	"github.com/labstack/echo"
 	"github.com/olahol/melody"
 	"github.com/shurcooL/github_flavored_markdown"
+	"strings"
 )
 
 var port int
 var dirPath string
+var currentFile string
 
 type FileContent struct {
 	Title string `json:"title"`
 	Body  string `json:"body"`
+}
+
+func setCurrentFile(path string) {
+	currentFile = path
+}
+
+func getCurrentFile() string {
+	return currentFile
 }
 
 func init() {
@@ -33,19 +43,32 @@ func main() {
 	dirPath = mustMakeDirPath()
 	mm := melody.New()
 
-	var currentFile string = filepath.Join(dirPath, "README.md")
+	currentFile = filepath.Join(dirPath, "README.md")
+	if _, e := os.Stat(currentFile); e != nil && os.IsNotExist(e) {
+		currentFile = filepath.Join(dirPath, "Home.md")
+		if _, ee := os.Stat(currentFile); ee != nil && os.IsNotExist(ee) {
+			fs, _ := ioutil.ReadDir(dirPath)
+			for _, f := range fs {
+				ext := filepath.Ext(f.Name())
+				if !strings.HasPrefix(f.Name(), "_") && (ext == ".md" || ext == ".markdown" || ext == ".mdown") {
+					currentFile = f.Name()
+					break
+				}
+			}
+		}
+	}
 
 	mm.HandleConnect(func(s *melody.Session) {
 		log.Println("session connected")
+		curFile, e := getReadFile(getCurrentFile())
+		if e != nil {
+			log.Println(e)
+		}
 		sidebar, e := getReadFile(filepath.Join(dirPath, "_Sidebar.md"))
 		if e != nil {
 			log.Println(e)
 		}
 		footer, e := getReadFile(filepath.Join(dirPath, "_Footer.md"))
-		if e != nil {
-			log.Println(e)
-		}
-		curFile, e := getReadFile(currentFile)
 		if e != nil {
 			log.Println(e)
 		}
@@ -60,6 +83,13 @@ func main() {
 			}
 			mm.Broadcast(j)
 		}
+
+		j, e := json.Marshal(curFile)
+		if e != nil {
+			log.Println(e)
+			return
+		}
+		mm.Broadcast(j)
 	})
 	mm.HandleDisconnect(func(s *melody.Session) {
 		log.Println("session disconnected")
@@ -77,8 +107,12 @@ func main() {
 				log.Println("event:", event)
 				// if event.Op&fsnotify.Write == fsnotify.Write {
 				log.Println("modified file:", event.Name)
+				if ff := filepath.Ext(event.Name); ff != "" && ff == ".md" && ff == ".markdown" && ff == ".mdown" {
+					log.Println("not markdown file, continuing...")
+					continue
+				}
 				f := getFilePathFromParam(event.Name)
-				currentFile = f
+				setCurrentFile(f)
 				m, e := getReadFile(f)
 				if e != nil {
 					log.Println(e)
@@ -93,7 +127,7 @@ func main() {
 				mm.Broadcast(b)
 				// }
 			case err := <-watcher.Errors:
-				log.Println("error:", err)
+				log.Println("watcher error:", err)
 			}
 		}
 	}()
@@ -103,11 +137,13 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// Echo is polite because it prioritizes these paths, so they can be overlapping,
+	// ie. ":filename" overlaps everything except /
 	r := echo.New()
-	r.File("/", "index.html")
+	r.File("/", filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "rotblauer", "wub", "index.html"))
 	// Static assets.
-	r.Static("/assets", "./assets")
-	r.Static("/node_modules/primer-css/build", "./node_modules/primer-css/build")
+	r.Static("/assets", filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "rotblauer", "wub", "assets"))
+	r.Static("/node_modules/primer-css/build", filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "rotblauer", "wub", "node_modules/primer-css/build"))
 	// Websocket.
 	r.GET("/x/0", func(c echo.Context) error {
 		mm.HandleRequest(c.Response(), c.Request())
@@ -115,9 +151,9 @@ func main() {
 	})
 	// Any other filename.
 	r.Any("/:filename", func(c echo.Context) error {
-		filename := c.Param("filename")
-		filename = getFilePathFromParam(filename)
-		currentFile = filename
+		filename := getFilePathFromParam(c.Param("filename"))
+		setCurrentFile(filename)
+		c.Response().Header().Set("Cache-Control: no-cache", "true")
 		return c.Redirect(http.StatusMovedPermanently, "/")
 	})
 
