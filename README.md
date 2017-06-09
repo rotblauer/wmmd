@@ -1,9 +1,9 @@
 # Wub
 
-![wub-screenshot](./wub.png)
-
 > Delivers live-reloaded markdown files from a directory to your browser,
 automatically updating to show you the one you're working on.
+
+![wub-screenshot](./wub.png)
 
 The project was begun with editing Github Wiki pages in mind. Style
 mimics Github as closely as my patience allows.
