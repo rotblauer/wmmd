@@ -1,7 +1,51 @@
 # Wub
 
-> Delivers livereloaded markdown files for a directory, #bringyourown$editor
+![wub-screenshot](./wub.png)
 
-__All for one, and one for all:__ Edit one or many files in a directory and watch `wub` live reload to the file you're currently editing. Just hit save.
+> Delivers live-reloaded markdown files from a directory to your browser,
+automatically updating to show you the one you're working on.
 
-__Wiki-perfect:__ The project was begun with editing Github Wiki pages in mind. Click the discrete 'Wiki' option in the top right of the screen to toggle between standard and wiki-style layouts.
+The project was begun with editing Github Wiki pages in mind. Style
+mimics Github as closely as my patience allows.
+
+### Installation
+```shell
+$ go get github.com/rotblauer/wub/...
+$ go install github.com/rotblauer/wub
+$ which wub
+> $GOPATH/bin/wub
+```
+
+### Usage
+Wub is simple. Point it a directory and run.
+
+```shell
+$ cd my/markdown/directory
+$ wub
+
+# or
+
+$ wub --port 3001 my/markdown/directory
+```
+
+It will open with (in order of priority):
+- README.md
+- Home.md
+- the first .md/.markdown/.mdown file it finds that's not prefixed with "_"
+
+Then, just edit any file in that directory and wub will detect that change and render it.
+
+Relative links will be functional, i.e. `./Instructions.md`.
+
+#### Wiki mode
+Press `w`, or click the light gray button "Wiki: [on|off]" in the top right
+to toggle Github Wiki page style layout, which renders `_Sidebar.md` and
+`_Footer.md` in their respective places.
+
+### Limitations and ~~shit~~ hit list
+- It does not traverse the directory recursively.
+- It is not very clever about file names and titles (with regard to links and titles); it doesn't handle ambiguity well.
+As far as it goes so far is appending ".md" to links without that extension.
+- It would be really great if it were clever about absolute href/urls, so "hardcoded" wiki links could
+be toggled to relative paths if they exits. Not _yet_.
+- It does not scroll for you to your current changes... not sure if that's a limitation or a feature.
