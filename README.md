@@ -41,9 +41,6 @@ to toggle Github Wiki page style layout, which renders `_Sidebar.md` and
 `_Footer.md` in their respective places.
 
 ### Limitations and ~~shit~~ hit list
-- It is not very clever about file names and titles (with regard to links and titles); it doesn't handle ambiguity well.
-As far as it goes so far is appending ".md" to links without that extension, e.g. it would be nice if, upon receiving a
-url parameter `./Instructions`, it would look for `.md`, `.markdown`, `.mdown`, `.adoc`, instead of just `.md`
 - It would be really great if it were clever about absolute href/urls, so "hardcoded" wiki links could
 be toggled to relative paths if they exits. Not _yet_.
 - It does not scroll for you to your current changes... not sure if that's a limitation or a feature.
