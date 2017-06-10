@@ -1,3 +1,0 @@
-# TEST
-
-[readem](./README.md)

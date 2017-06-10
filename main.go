@@ -10,11 +10,11 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/fsnotify/fsnotify"
+	"github.com/rjeczalik/notify"
 	"github.com/labstack/echo"
 	"github.com/olahol/melody"
 	"github.com/shurcooL/github_flavored_markdown"
-	"strings"
+	"time"
 )
 
 var port int
@@ -43,20 +43,9 @@ func main() {
 	dirPath = mustMakeDirPath()
 	mm := melody.New()
 
-	currentFile = filepath.Join(dirPath, "README.md")
-	if _, e := os.Stat(currentFile); e != nil && os.IsNotExist(e) {
-		currentFile = filepath.Join(dirPath, "Home.md")
-		if _, ee := os.Stat(currentFile); ee != nil && os.IsNotExist(ee) {
-			fs, _ := ioutil.ReadDir(dirPath)
-			for _, f := range fs {
-				ext := filepath.Ext(f.Name())
-				if !strings.HasPrefix(f.Name(), "_") && (ext == ".md" || ext == ".markdown" || ext == ".mdown") {
-					currentFile = f.Name()
-					break
-				}
-			}
-		}
-	}
+	watcher := make(chan notify.EventInfo, 1)
+
+	currentFile = getLastUpdated(dirPath)
 
 	mm.HandleConnect(func(s *melody.Session) {
 		log.Println("session connected")
@@ -95,23 +84,19 @@ func main() {
 		log.Println("session disconnected")
 	})
 
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer watcher.Close()
 	go func() {
 		for {
 			select {
-			case event := <-watcher.Events:
+			case event := <-watcher:
 				log.Println("event:", event)
-				// if event.Op&fsnotify.Write == fsnotify.Write {
-				log.Println("modified file:", event.Name)
-				if ff := filepath.Ext(event.Name); ff != "" && ff == ".md" && ff == ".markdown" && ff == ".mdown" {
+				if ei, ee := os.Stat(event.Path()); ee != nil || (ei != nil && ei.IsDir()) {
+					continue
+				}
+				if !filepathIsMarkdown(event.Path()) {
 					log.Println("not markdown file, continuing...")
 					continue
 				}
-				f := getFilePathFromParam(event.Name)
+				f := getFilePathFromParam(event.Path())
 				setCurrentFile(f)
 				m, e := getReadFile(f)
 				if e != nil {
@@ -125,17 +110,14 @@ func main() {
 				}
 				log.Println("broadcasting", string(b), mm)
 				mm.Broadcast(b)
-				// }
-			case err := <-watcher.Errors:
-				log.Println("watcher error:", err)
 			}
 		}
 	}()
-	// Sometimes on refresh watcher stops silently.
-	err = watcher.Add(dirPath)
-	if err != nil {
+
+	if err := notify.Watch(filepath.Join(dirPath, "..."), watcher, notify.All); err != nil {
 		log.Fatal(err)
 	}
+	defer notify.Stop(watcher)
 
 	// Echo is polite because it prioritizes these paths, so they can be overlapping,
 	// ie. ":filename" overlaps everything except /
@@ -151,14 +133,52 @@ func main() {
 	})
 	// Any other filename.
 	r.Any("/:filename", func(c echo.Context) error {
-		filename := getFilePathFromParam(c.Param("filename"))
+		p := c.Param("filename")
+		if filepathIsResource(p) {
+			return c.File(filepath.Join(dirPath, p))
+		}
+		filename := getFilePathFromParam(p)
 		setCurrentFile(filename)
+		// It is important with all this redirecting to NOT allow cacheing.
 		c.Response().Header().Set("Cache-Control: no-cache", "true")
 		return c.Redirect(http.StatusMovedPermanently, "/")
 	})
 
 	log.Println("Listening...", port)
 	r.Logger.Fatal(r.Start(":" + strconv.Itoa(port)))
+}
+
+func filepathIsMarkdown(path string) bool {
+	ff := filepath.Ext(path)
+	return !(ff != "" && ff != ".md" && ff != ".markdown" && ff != ".mdown" && ff != ".adoc" && ff != ".txt")
+}
+
+func getLastUpdated(path string) (filename string) {
+	fs, fe := ioutil.ReadDir(path)
+	if fe != nil {
+		log.Println(fe)
+		return ""
+	}
+	var latestMod time.Time
+	var latestModFile string
+	var found bool
+	for _, ff := range fs {
+		if ff.IsDir() {
+			continue
+		}
+		if !filepathIsMarkdown(ff.Name()) {
+			continue
+		}
+		if ff.ModTime().After(latestMod) {
+			found = true
+			latestMod = ff.ModTime()
+			latestModFile = ff.Name()
+		}
+	}
+	if !found {
+		latestModFile = fs[0].Name()
+	}
+	return latestModFile
 }
 
 func mustMakeDirPath() string {
@@ -184,19 +204,33 @@ func mustMakeDirPath() string {
 	return abs
 }
 
+func filepathIsResource(path string) bool {
+	ext := filepath.Ext(path)
+	return ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".svg" || ext == ".tiff" || ext == ".gif"
+}
+
 func getFilePathFromParam(param string) string {
 	filename := param
 	if filename == "" {
 		return ""
 	}
-	// TODO: handle ambiguous filenames in url param
-	if !(filepath.Ext(filename) == ".md") {
-		filename = filename + ".md"
+	if !filepath.IsAbs(filename) {
+		filename = filepath.Join(dirPath, filename)
+	}
+	if fi, e := os.Stat(filename); e == nil && !fi.IsDir() {
+		return filename
+	}
+	if ext := filepath.Ext(filename); ext != "" {
+		return filename
 	}
 
-	if !filepath.IsAbs(filename) {
-		filename, _ = filepath.Abs(filename)
+	for _, ext := range []string{".md", ".markdown", ".mdown", ".adoc", ".txt"} {
+		fname := filename + ext
+		if i, e := os.Stat(fname); e == nil && !i.IsDir() {
+			return fname
+		}
 	}
+
 	return filename
 }
 
