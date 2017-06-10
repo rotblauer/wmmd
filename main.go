@@ -15,6 +15,7 @@ import (
 	"github.com/olahol/melody"
 	"github.com/shurcooL/github_flavored_markdown"
 	"time"
+	"strings"
 )
 
 var port int
@@ -96,6 +97,10 @@ func main() {
 					log.Println("not markdown file, continuing...")
 					continue
 				}
+				if filepathIsExcluded(event.Path()) {
+					log.Println("excluded path, continuing...")
+					continue
+				}
 				f := getFilePathFromParam(event.Path())
 				setCurrentFile(f)
 				m, e := getReadFile(f)
@@ -108,7 +113,7 @@ func main() {
 					log.Println(e)
 					continue
 				}
-				log.Println("broadcasting", string(b), mm)
+				log.Println("broadcasting", m.Title)
 				mm.Broadcast(b)
 			}
 		}
@@ -151,6 +156,10 @@ func main() {
 func filepathIsMarkdown(path string) bool {
 	ff := filepath.Ext(path)
 	return !(ff != "" && ff != ".md" && ff != ".markdown" && ff != ".mdown" && ff != ".adoc" && ff != ".txt")
+}
+
+func filepathIsExcluded(path string) bool {
+	return strings.Contains(path, ".git") || strings.Contains(path, ".idea")
 }
 
 func getLastUpdated(path string) (filename string) {

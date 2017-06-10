@@ -94,14 +94,22 @@ var load = function () {
 			sidebar.style.display = "block";
 			footer.style.display = "block";
 			if (!body.classList.contains("four-fifths")) {
-				body.classList.add("four-fifths");
+				// body.classList.add("four-fifths");
 			}
+            if (body.classList.contains("centered")) {
+                body.classList.remove("centered");
+            }
 			body.innerHTML = lastWikiStatusBody;
 			emojify.run(body);
 		} else {
 			if (body.classList.contains("four-fifths")) {
-				body.classList.remove("four-fifths");
+				// body.classList.remove("four-fifths");
 			}
+            if (!body.classList.contains("centered")) {
+                // body.classList.remove("four-fifths");
+				body.classList.add("centered");
+            }
+
 			headerHolder.style.display = "none";
 			sidebar.style.display = "none";
 			footer.style.display = "none";
