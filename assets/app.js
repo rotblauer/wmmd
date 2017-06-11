@@ -74,6 +74,7 @@ var load = function () {
 	var lastEdited = document.getElementById("last-edited");
 	var hudFilename = document.getElementById("hud-filename");
 	var hudWikiStatus = document.getElementById("wiki-status");
+	var hudUpdating = document.getElementById("hud-center");
 	
 	var parsed = "",
 	 diff = "", 
@@ -87,6 +88,10 @@ var load = function () {
 		console.log("wiki", wikiStatus);
 		setDisplayFromWikiStatus(wikiStatus);
 	};
+
+	function stripSuffix(title) {
+		return title.replace(/\.[^/.]+$/, "")
+	}
 
 	function setDisplayFromWikiStatus(wikiStatus) {
 		if (wikiStatus) {
@@ -125,17 +130,22 @@ var load = function () {
 	ws.ondisconnect = function (msg) {
 		console.log("disconnected");
 	}
+	var haveFooter = false;
+	var haveSidebar = false;
 	ws.onmessage = function (msg) {
+        $(hudUpdating).fadeIn(100);
+
 		// {title: "", body: ""}
 		parsed = JSON.parse(msg.data);
 		console.log("got message", msg);
-
-		switch (parsed.title) {
-		case "_Footer.md":
+		switch (stripSuffix(parsed.title)) {
+		case "_Footer":
+			haveFooter = true;
 			footer.innerHTML = parsed.body;
 			emojify.run(footer);
 			break;
-		case "_Sidebar.md":
+		case "_Sidebar":
+            haveSidebar = true;
 			sidebar.innerHTML = parsed.body;
 			emojify.run(sidebar);
 			break;
@@ -146,7 +156,7 @@ var load = function () {
 			// parsed.body = diff;	
 
 			body.innerHTML = parsed.body;
-			header.innerHTML = parsed.title;
+			header.innerHTML = stripSuffix(parsed.title);
 			hudFilename.innerHTML = parsed.title;
 			emojify.run(body);
 			emojify.run(header);
@@ -159,7 +169,7 @@ var load = function () {
 		}	
 		if (!wikiStatus) {
 			body.innerHTML = parsed.body;
-			header.innerHTML = parsed.title;
+			header.innerHTML = stripSuffix(parsed.title);
 			hudFilename.innerHTML = parsed.title;
 			emojify.run(body);
 			emojify.run(header);
@@ -168,6 +178,15 @@ var load = function () {
 		var d = new Date();
 		var n = d.toTimeString();
 		lastEdited.innerHTML = "you last updated this at " + n;
+		if (!haveFooter) {
+			footer.style.display = "none";
+		}
+        if (!haveSidebar) {
+            sidebar.style.display = "none";
+        }
+
+        debounce($(hudUpdating).fadeOut(150), 300);
+
 	}
 
 	function scrollIt() {

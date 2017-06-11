@@ -16,11 +16,13 @@ import (
 	"github.com/shurcooL/github_flavored_markdown"
 	"time"
 	"strings"
+	"regexp"
 )
 
 var port int
 var dirPath string
 var currentFile string
+var noHeadTags bool
 
 type FileContent struct {
 	Title string `json:"title"`
@@ -37,6 +39,12 @@ func getCurrentFile() string {
 
 func init() {
 	flag.IntVar(&port, "port", 3000, "port to serve on")
+	flag.BoolVar(&noHeadTags, "no-tags", false, `remove file header tags matching '(?m)^---$(.|\n)*^---$'
+	e.g.
+	---
+	name: Home
+	category: documentation
+	---`)
 }
 
 func main() {
@@ -137,10 +145,27 @@ func main() {
 		return nil
 	})
 	// Any other filename.
-	r.Any("/:filename", func(c echo.Context) error {
-		p := c.Param("filename")
+	r.Any("/*", func(c echo.Context) error { // :filename
+		//p := c.Param("filename")
+		var p string = dirPath
+		for _, v := range c.ParamValues() {
+			p = filepath.Join(p, v)
+		}
+		log.Println("path", p)
 		if filepathIsResource(p) {
-			return c.File(filepath.Join(dirPath, p))
+			log.Println("resource request: filename:", p)
+			e := c.File(p)
+			if e != nil {
+				log.Println("file error: ", e)
+				if strings.Contains(p, "/wiki/") {
+					p = strings.Replace(p, "/wiki", "", 1)
+				}
+				e = c.File(p)
+				if e == nil {
+					log.Println("found resource", p)
+				}
+			}
+			return e
 		}
 		filename := getFilePathFromParam(p)
 		setCurrentFile(filename)
@@ -248,6 +273,15 @@ func getReadFile(path string) (FileContent, error) {
 	if e != nil {
 		log.Println(e)
 		return FileContent{}, e
+	}
+	if noHeadTags {
+		re := regexp.MustCompile(`(?m)^---$(.|\n)*^---$`)
+		if re.Match(fileBytes) {
+			log.Println("found header tags match, removing")
+			firstOccur := re.FindAllString(string(fileBytes), 1)
+			log.Println(firstOccur)
+			fileBytes = []byte(strings.Replace(string(fileBytes), firstOccur[0], "", 1))
+		}
 	}
 	return FileContent{
 		Title: filepath.Base(path), // TODO parse File-Name.md syntax => File Name

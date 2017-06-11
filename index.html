@@ -3,12 +3,10 @@
 		<meta charset="utf-8">
 		<link rel="stylesheet" type="text/css" href="/node_modules/primer-css/build/build.css">
 		<link href="/assets/gfm.css" media="all" rel="stylesheet" type="text/css" />
-
-		<link href="//cdnjs.cloudflare.com/ajax/libs/octicons/2.1.2/octicons.css" media="all" rel="stylesheet" type="text/css" />
-		<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/emojify.js/1.1.0/css/basic/emojify.min.css" />
-		<script src="//cdnjs.cloudflare.com/ajax/libs/emojify.js/1.1.0/js/emojify.min.js"></script>
-		<!-- for goddamn scrolling -->
-		<script   src="https://code.jquery.com/jquery-3.2.1.min.js"   integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="   crossorigin="anonymous"></script>
+		<link href="/assets/octicons.css" media="all" rel="stylesheet" type="text/css" />
+		<link rel="stylesheet" href="/assets/emojify.min.css" />
+		<script src="/assets/emojify.min.js"></script>
+		<script src="/assets/jquery-3.2.1.min.js"></script>
 		<style>
 			#box {
 				padding: 30px;
@@ -37,6 +35,11 @@
 				border-radius: 5px;
 				font-size: 90%;
 			}
+			#content-header-holder {
+				margin-bottom: 30px;
+				padding-bottom: 10px;
+				border-bottom: 1px solid lightgray;
+			}
 			#content-footer {
 				position: relative;
 				padding: 10px;
@@ -49,7 +52,7 @@
 			}
 			.hud {
 				position: fixed;
-				top: 0px;
+
 				padding: 2px;
 				background-color: lightgray;
 				color: white;
@@ -58,9 +61,30 @@
 			}
 			#hud-left {
 				left: 0px;
+				top: 0px;
 			}
 			#hud-right {
 				right: 0px;
+				top: 0px;
+			}
+			#hud-center {
+				height: 1em;
+				width: 1em;
+				border-radius: 0.5em;
+				background-color: springgreen;
+				/*left: 0.5em;*/
+				bottom: 1em;
+				right: 1em;
+				display: none;
+			}
+			ul {
+				list-style-type: disc;
+			}
+			ol {
+				list-style-type: decimal;
+			}
+			li {
+				display: list-item;
 			}
 		</style>
 		<script src="/assets/app.js?n=1"></script>
@@ -69,16 +93,19 @@
 	<div id="hud-left" class="hud">
 		<span id="hud-filename"></span>
 	</div>
+	<div id="hud-center" class="hud">
+
+	</div>
 	<div id="hud-right" class="hud">
 		<span id="hud-wiki" onclick="toggleWikiStatus()">
 			[w] Wiki: <span id="wiki-status"></span>
 		</span>
 	</div>
 		<div id="box" class="container">
-			<div id="content-header-holder" class="columns" style="margin-bottom: 30px;">
+			<div id="content-header-holder" class="columns" >
 				<div class="column ">
 					<div class="markdown-body">
-					<p id="content-header" class="lead" style="font-size: 2.1em; font-weight: 475;">
+					<p id="content-header" class="lead" style="font-size: 2.1em; font-weight: 482;">
 					</p>
 						<p id="last-edited"></p>
 					</div>
