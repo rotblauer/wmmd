@@ -45,10 +45,10 @@ $ wub [--options] [PATH]
 | Option | Default | About |
 |---|---|---|
 | `--port` | 3000 | Specify port to serve on |
-| `--no-tags` | false | Remove leading tags from file |
+| `--topless` | false | Remove leading tags from file |
 | `PATH` | `$CWD` | May be an absolute or relative path |
 
-The `--no-tags` option removes:
+The `--topless` option removes:
 ```md
 ---
 name: Home

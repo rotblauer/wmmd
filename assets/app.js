@@ -21,23 +21,23 @@ function setWikiStatus(bool) {
 }
 // https://stackoverflow.com/questions/8917921/cross-browser-javascript-not-jquery-scroll-to-top-animation
 function scrollToo(el, duration) { 
-  var elOffset = $(el).offset().top;
-  console.log("elOffset", elOffset);
-  var elHeight = $(el).height();
-  console.log("elHeight", elHeight);
-  var windowHeight = window.innerHeight;
-  console.log("windowHeight", windowHeight);
-  var offset;
-  console.log("offset", offset);
+  // var elOffset = $(el).offset().top;
+  // console.log("elOffset", elOffset);
+  // var elHeight = $(el).height();
+  // console.log("elHeight", elHeight);
+  // var windowHeight = window.innerHeight;
+  // console.log("windowHeight", windowHeight);
+  // var offset;
+  // console.log("offset", offset);
 
-  if (elHeight < windowHeight) {
-    offset = elOffset - ((windowHeight / 2) - (elHeight / 2));
-  }
-  else {
-    offset = elOffset;
-  }
+  // if (elHeight < windowHeight) {
+  //   offset = elOffset - ((windowHeight / 2) - (elHeight / 2));
+  // } else {
+  //   offset = elOffset;
+  // }
+  // var offset =  +
   var speed = 700;
-  $('html, body').animate({scrollTop:offset}, speed);
+  $('html, body').animate({scrollTop:$(el).offset().top - (window.innerHeight/2)}, speed);
 }
 // https://stackoverflow.com/questions/8024102/javascript-compare-strings-and-get-end-difference
 function getDiff(string_a, string_b) {
@@ -124,20 +124,35 @@ var load = function () {
 	var wikiStatus = getWikiStatus();
 	setDisplayFromWikiStatus(wikiStatus);
 
-	ws.onconnect = function (msg) {
+	ws.onopen = function (msg) {
 		console.log("connected");
 	}
-	ws.ondisconnect = function (msg) {
+	ws.onclose = function (msg) {
 		console.log("disconnected");
+		hudUpdating.innerHTML = "<span>PLEASE RELOAD</span>";
+		hudUpdating.classList.add("disconnected");
+
 	}
 	var haveFooter = false;
 	var haveSidebar = false;
 	ws.onmessage = function (msg) {
-        $(hudUpdating).fadeIn(100);
+		// hudUpdating.classList.remove("disconnected");
+        $(hudUpdating).fadeIn(200);
+        setTimeout(function () {
+        	$(hudUpdating).fadeOut(200);
+        }, 200);
+        
 
 		// {title: "", body: ""}
 		parsed = JSON.parse(msg.data);
 		console.log("got message", msg);
+
+		// diff = getDiff(lastBody, parsed.body);
+		// console.log("diff", diff);
+		// lastBody = parsed.body;
+		// parsed.body = diff;	
+
+
 		switch (stripSuffix(parsed.title)) {
 		case "_Footer":
 			haveFooter = true;
@@ -150,10 +165,7 @@ var load = function () {
 			emojify.run(sidebar);
 			break;
 		default:
-			// diff = getDiff(lastBody, parsed.body);
-			// console.log("diff", diff);
-			// lastBody = parsed.body;
-			// parsed.body = diff;	
+			
 
 			body.innerHTML = parsed.body;
 			header.innerHTML = stripSuffix(parsed.title);
@@ -174,6 +186,9 @@ var load = function () {
 			emojify.run(body);
 			emojify.run(header);
 		}
+		// if (stripSuffix(parsed.title) != "_Footer" && stripSuffix(parsed.title) != "_Sidebar") {
+		// 	debounce(scrollIt, 300);
+		// }
 
 		var d = new Date();
 		var n = d.toTimeString();
@@ -185,7 +200,11 @@ var load = function () {
             sidebar.style.display = "none";
         }
 
-        debounce($(hudUpdating).fadeOut(150), 300);
+        // $('div.highlight').each(function(i, block) {
+        //     hljs.highlightBlock(block);
+        //   });
+
+        
 
 	}
 
@@ -205,6 +224,10 @@ var load = function () {
 			toggleWikiStatus();
 		}
 	}
+
+	$(hudUpdating).on("click", function (e) {
+		window.location.reload(true);
+	})
 }
 
 // https://gist.github.com/sagiavinash/5c9084b79f68553c4b7d

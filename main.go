@@ -5,18 +5,18 @@ import (
 	"flag"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
 
-	"github.com/rjeczalik/notify"
+	"regexp"
+	"strings"
+	"time"
+
 	"github.com/labstack/echo"
 	"github.com/olahol/melody"
+	"github.com/rjeczalik/notify"
 	"github.com/shurcooL/github_flavored_markdown"
-	"time"
-	"strings"
-	"regexp"
 )
 
 var port int
@@ -39,7 +39,7 @@ func getCurrentFile() string {
 
 func init() {
 	flag.IntVar(&port, "port", 3000, "port to serve on")
-	flag.BoolVar(&noHeadTags, "no-tags", false, `remove file header tags matching '(?m)^---$(.|\n)*^---$'
+	flag.BoolVar(&noHeadTags, "topless", false, `remove file header tags matching '(?m)^---$(.|\n)*^---$'
 	e.g.
 	---
 	name: Home
@@ -97,16 +97,16 @@ func main() {
 		for {
 			select {
 			case event := <-watcher:
-				log.Println("event:", event)
 				if ei, ee := os.Stat(event.Path()); ee != nil || (ei != nil && ei.IsDir()) {
 					continue
 				}
-				if !filepathIsMarkdown(event.Path()) {
-					log.Println("not markdown file, continuing...")
+				if filepathIsExcluded(event.Path()) {
+					// log.Println("excluded path, continuing...")
 					continue
 				}
-				if filepathIsExcluded(event.Path()) {
-					log.Println("excluded path, continuing...")
+				// log.Println("event:", event)
+				if !filepathIsMarkdown(event.Path()) {
+					// log.Println("not markdown file, continuing...")
 					continue
 				}
 				f := getFilePathFromParam(event.Path())
@@ -169,9 +169,10 @@ func main() {
 		}
 		filename := getFilePathFromParam(p)
 		setCurrentFile(filename)
-		// It is important with all this redirecting to NOT allow cacheing.
+		// It is important with all this same-file-yness to NOT allow cacheing.
 		c.Response().Header().Set("Cache-Control: no-cache", "true")
-		return c.Redirect(http.StatusMovedPermanently, "/")
+		return c.File(filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "rotblauer", "wub", "index.html"))
+		// c.Redirect(http.StatusMovedPermanently, "/")
 	})
 
 	log.Println("Listening...", port)
@@ -252,7 +253,7 @@ func getFilePathFromParam(param string) string {
 		filename = filepath.Join(dirPath, filename)
 	}
 	if fi, e := os.Stat(filename); e == nil && !fi.IsDir() {
-		return filename
+		return filepath.Join(dirPath, fi.Name())
 	}
 	if ext := filepath.Ext(filename); ext != "" {
 		return filename
@@ -276,11 +277,13 @@ func getReadFile(path string) (FileContent, error) {
 	}
 	if noHeadTags {
 		re := regexp.MustCompile(`(?m)^---$(.|\n)*^---$`)
-		if re.Match(fileBytes) {
+		if found := re.Find(fileBytes); found != nil {
 			log.Println("found header tags match, removing")
 			firstOccur := re.FindAllString(string(fileBytes), 1)
 			log.Println(firstOccur)
 			fileBytes = []byte(strings.Replace(string(fileBytes), firstOccur[0], "", 1))
+		} else {
+			log.Println("no matching tags found, continuing")
 		}
 	}
 	return FileContent{

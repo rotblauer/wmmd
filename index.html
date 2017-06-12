@@ -1,28 +1,44 @@
 <html>
 	<head>
 		<meta charset="utf-8">
+		
+		<!-- Github -->
 		<link rel="stylesheet" type="text/css" href="/node_modules/primer-css/build/build.css">
 		<link href="/assets/gfm.css" media="all" rel="stylesheet" type="text/css" />
 		<link href="/assets/octicons.css" media="all" rel="stylesheet" type="text/css" />
+		
+		<!-- Emojis -->
 		<link rel="stylesheet" href="/assets/emojify.min.css" />
 		<script src="/assets/emojify.min.js"></script>
+		
+		<!-- Syntax highlighting -->
+		<!-- <link rel="stylesheet" href="/assets/highlight/styles/default.css">
+		<script src="/assets/highlight/highlight.pack.js"></script> -->
+
+		<!-- Jquery even though it's not used much -->
 		<script src="/assets/jquery-3.2.1.min.js"></script>
+
 		<style>
 			#box {
 				padding: 30px;
 				min-height: 500px;
 			}
-			/*.change {*/
-				/*background-color: green;*/
-				/*z-index: 1000;*/
-				/*color: white;*/
-				/*font-weight: 700;*/
-			/*}*/
+			.change {
+				background-color: green;
+				z-index: 1000;
+				color: white;
+				font-weight: 700;
+			}
 			.content {
 				padding: 30px;
 			}
 			.markdown-body * {
 				overflow: hidden;
+			}
+			img {
+				margin-left: auto !important;
+				margin-right: auto !important;
+				display: block;
 			}
 			#last-edited {
 				margin-top: -20px;
@@ -52,13 +68,13 @@
 			}
 			.hud {
 				position: fixed;
-
 				padding: 2px;
 				background-color: lightgray;
 				color: white;
 				font-family: menlo;
 				line-height: 1em;
 			}
+		
 			#hud-left {
 				left: 0px;
 				top: 0px;
@@ -68,14 +84,20 @@
 				top: 0px;
 			}
 			#hud-center {
-				height: 1em;
-				width: 1em;
 				border-radius: 0.5em;
 				background-color: springgreen;
-				/*left: 0.5em;*/
-				bottom: 1em;
-				right: 1em;
-				display: none;
+				display: inline-block;
+				float: left;
+				margin-left: 0.4em;
+
+			}
+			#hud-center.hud.disconnected {
+				background-color: red !important;
+				color: white;
+				opacity: 1 !important;
+				display: inline-block !important;
+				border-radius: 0 !important;
+				width: auto !important;
 			}
 			ul {
 				list-style-type: disc;
@@ -92,10 +114,10 @@
 	<body onload="load()">
 	<div id="hud-left" class="hud">
 		<span id="hud-filename"></span>
+		<div id="hud-center" class="hud">
+		</div>
 	</div>
-	<div id="hud-center" class="hud">
-
-	</div>
+	
 	<div id="hud-right" class="hud">
 		<span id="hud-wiki" onclick="toggleWikiStatus()">
 			[w] Wiki: <span id="wiki-status"></span>
