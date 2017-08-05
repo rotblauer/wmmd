@@ -56,6 +56,12 @@ func init() {
 var lastfile string
 var lasttext string
 
+func getCommSuffixI(s1 string) (commongSuffixIndex int) {
+	commongSuffixIndex = dmp.DiffCommonSuffix(lasttext, s1)
+	lasttext = s1
+	return commongSuffixIndex
+}
+
 func main() {
 	flag.Parse()
 	dirPath = mustMakeDirPath()
@@ -291,14 +297,14 @@ func getReadFile(path string) (FileContent, error) {
 		if fbn := filepath.Base(path); !strings.Contains(fbn, "Sidebar") && !strings.Contains(fbn, "Footer") {
 			ffs := string(fileBytes)
 			hiddenChangeTag := `<span class="suffix-change">CHANGED</span>`
-			changeI = dmp.DiffCommonSuffix(lasttext, ffs)
-			lasttext = string(fileBytes)
-			if changeI != 0 && len(ffs)-1 != changeI {
+			changeI = getCommSuffixI(ffs)
+			if changeI != 0 && len(ffs) != changeI {
 				ffs = ffs[:len(ffs)-changeI] + hiddenChangeTag + ffs[len(ffs)-changeI:]
 				fileBytes = []byte(ffs)
 			}
 		}
 	}
+	lasttext = string(fileBytes)
 	lastfile = filepath.Base(path)
 	if noHeadTags {
 		re := regexp.MustCompile(`(?m)^---$(.|\n)*^---$`)

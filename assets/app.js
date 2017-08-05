@@ -38,7 +38,7 @@ function scrollToo(el, duration) {
   // var offset =  +
   var speed = 700;
   $('html, body').animate({scrollTop:$(el).offset().top - (window.innerHeight/2)}, speed);
-  // $(el).hide();
+  $(el).hide();
 }
 // https://stackoverflow.com/questions/8024102/javascript-compare-strings-and-get-end-difference
 function getDiff(string_a, string_b) {
