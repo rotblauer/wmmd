@@ -58,8 +58,12 @@ var lasttext string
 
 func getCommSuffixI(s1 string) (commongSuffixIndex int) {
 	commongSuffixIndex = dmp.DiffCommonSuffix(lasttext, s1)
-	lasttext = s1
 	return commongSuffixIndex
+}
+
+func getCommPrefix(s1 string) int {
+	commonPrefixI := dmp.DiffCommonPrefix(lasttext, s1)
+	return commonPrefixI
 }
 
 func main() {
@@ -293,19 +297,28 @@ func getReadFile(path string) (FileContent, error) {
 	changeI := 0
 	if lasttext == "" {
 		lasttext = string(fileBytes)
-	} else if lastfile == filepath.Base(path) {
+		lastfile = filepath.Base(path)
+	} else if lastfile == filepath.Base(path) && lasttext != string(fileBytes) {
 		if fbn := filepath.Base(path); !strings.Contains(fbn, "Sidebar") && !strings.Contains(fbn, "Footer") {
+
 			ffs := string(fileBytes)
 			hiddenChangeTag := `<span class="suffix-change">CHANGED</span>`
+
 			changeI = getCommSuffixI(ffs)
-			if changeI != 0 && len(ffs) != changeI {
+			if changeI != 0 && len(ffs)-1 != changeI {
+				log.Println("comm suffix: ", changeI)
 				ffs = ffs[:len(ffs)-changeI] + hiddenChangeTag + ffs[len(ffs)-changeI:]
-				fileBytes = []byte(ffs)
+			} else {
+				changeI = getCommPrefix(ffs)
+				log.Println("comm prefix: ", changeI)
+				ffs = ffs[:changeI] + hiddenChangeTag + ffs[changeI:]
 			}
+
+			lasttext = string(fileBytes)
+			lastfile = filepath.Base(path)
+			fileBytes = []byte(ffs)
 		}
 	}
-	lasttext = string(fileBytes)
-	lastfile = filepath.Base(path)
 	if noHeadTags {
 		re := regexp.MustCompile(`(?m)^---$(.|\n)*^---$`)
 		if found := re.Find(fileBytes); found != nil {
