@@ -269,7 +269,18 @@ func getFilePathFromParam(param string) string {
 		return ""
 	}
 	if filepath.IsAbs(filename) {
-		return filename
+		if fi, e := os.Stat(filename); e == nil && !fi.IsDir() {
+			return filename
+		}
+		if ext := filepath.Ext(filename); ext != "" {
+			return filename
+		}
+		for _, ext := range []string{".md", ".markdown", ".mdown", ".adoc", ".txt"} {
+			fname := filename + ext
+			if i, e := os.Stat(fname); e == nil && !i.IsDir() {
+				return fname
+			}
+		}
 	}
 
 	filename = filepath.Join(dirPath, filename)
