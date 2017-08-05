@@ -268,9 +268,11 @@ func getFilePathFromParam(param string) string {
 	if filename == "" {
 		return ""
 	}
-	if !filepath.IsAbs(filename) {
-		filename = filepath.Join(dirPath, filename)
+	if filepath.IsAbs(filename) {
+		return filename
 	}
+
+	filename = filepath.Join(dirPath, filename)
 	if fi, e := os.Stat(filename); e == nil && !fi.IsDir() {
 		return filepath.Join(dirPath, fi.Name())
 	}
@@ -298,26 +300,35 @@ func getReadFile(path string) (FileContent, error) {
 	if lasttext == "" {
 		lasttext = string(fileBytes)
 		lastfile = filepath.Base(path)
-	} else if lastfile == filepath.Base(path) && lasttext != string(fileBytes) {
-		if fbn := filepath.Base(path); !strings.Contains(fbn, "Sidebar") && !strings.Contains(fbn, "Footer") {
+		log.Println("initializing diff")
+	} else {
+		log.Println("filepath.base:", filepath.Base(path), lastfile, lasttext == string(fileBytes))
+		var ffs string
+		if lastfile == filepath.Base(path) && lasttext != string(fileBytes) {
+			log.Println("could update diff")
+			if fbn := filepath.Base(path); !strings.Contains(fbn, "Sidebar") && !strings.Contains(fbn, "Footer") {
 
-			ffs := string(fileBytes)
-			hiddenChangeTag := `<span class="suffix-change">CHANGED</span>`
+				log.Println("updating diff")
 
-			changeI = getCommSuffixI(ffs)
-			if changeI != 0 && len(ffs)-1 != changeI {
-				log.Println("comm suffix: ", changeI)
-				ffs = ffs[:len(ffs)-changeI] + hiddenChangeTag + ffs[len(ffs)-changeI:]
-			} else {
-				changeI = getCommPrefix(ffs)
-				log.Println("comm prefix: ", changeI)
-				ffs = ffs[:changeI] + hiddenChangeTag + ffs[changeI:]
+				ffs = string(fileBytes)
+				hiddenChangeTag := `<span class="suffix-change">CHANGED</span>`
+
+				changeI = getCommSuffixI(ffs)
+				if changeI != 0 && len(ffs)-1 != changeI {
+					log.Println("comm suffix: ", changeI)
+					ffs = ffs[:len(ffs)-changeI] + hiddenChangeTag + ffs[len(ffs)-changeI:]
+				} else {
+					changeI = getCommPrefix(ffs)
+					log.Println("comm prefix: ", changeI)
+					ffs = ffs[:changeI] + hiddenChangeTag + ffs[changeI:]
+				}
+
+				// Order matters here.
+				lasttext = string(fileBytes)
+				fileBytes = []byte(ffs)
 			}
-
-			lasttext = string(fileBytes)
-			lastfile = filepath.Base(path)
-			fileBytes = []byte(ffs)
 		}
+		lastfile = filepath.Base(path)
 	}
 	if noHeadTags {
 		re := regexp.MustCompile(`(?m)^---$(.|\n)*^---$`)
@@ -330,8 +341,12 @@ func getReadFile(path string) (FileContent, error) {
 			log.Println("no matching tags found, continuing")
 		}
 	}
+	rp, e := filepath.Rel(dirPath, path)
+	if e != nil {
+		return FileContent{}, e
+	}
 	return FileContent{
-		Title: filepath.Base(path), // TODO parse File-Name.md syntax => File Name
+		Title: rp, // TODO parse File-Name.md syntax => File Name
 		// Body:  emoji.Emojitize(string(github_flavored_markdown.Markdown(fileBytes))),
 		Body:    string(github_flavored_markdown.Markdown(fileBytes)),
 		ChangeI: changeI,
