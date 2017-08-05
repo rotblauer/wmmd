@@ -16,6 +16,7 @@ import (
 	"github.com/labstack/echo"
 	"github.com/olahol/melody"
 	"github.com/rjeczalik/notify"
+	diff "github.com/sergi/go-diff/diffmatchpatch"
 	"github.com/shurcooL/github_flavored_markdown"
 )
 
@@ -24,9 +25,12 @@ var dirPath string
 var currentFile string
 var noHeadTags bool
 
+var dmp *diff.DiffMatchPatch
+
 type FileContent struct {
-	Title string `json:"title"`
-	Body  string `json:"body"`
+	Title   string `json:"title"`
+	Body    string `json:"body"`
+	ChangeI int    `json:"changeIndex"`
 }
 
 func setCurrentFile(path string) {
@@ -45,6 +49,17 @@ func init() {
 	name: Home
 	category: documentation
 	---`)
+
+	dmp = diff.New()
+}
+
+var lastfile string
+var lasttext string
+
+func getCommSuffixI(s1 string) (commongSuffixIndex int) {
+	commongSuffixIndex = dmp.DiffCommonSuffix(lasttext, s1)
+	lasttext = s1
+	return commongSuffixIndex
 }
 
 func main() {
@@ -275,6 +290,22 @@ func getReadFile(path string) (FileContent, error) {
 		log.Println(e)
 		return FileContent{}, e
 	}
+	changeI := 0
+	if lasttext == "" {
+		lasttext = string(fileBytes)
+	} else if lastfile == filepath.Base(path) {
+		if fbn := filepath.Base(path); !strings.Contains(fbn, "Sidebar") && !strings.Contains(fbn, "Footer") {
+			ffs := string(fileBytes)
+			hiddenChangeTag := `<span class="suffix-change">CHANGED</span>`
+			changeI = getCommSuffixI(ffs)
+			if changeI != 0 && len(ffs) != changeI {
+				ffs = ffs[:len(ffs)-changeI] + hiddenChangeTag + ffs[len(ffs)-changeI:]
+				fileBytes = []byte(ffs)
+			}
+		}
+	}
+	lasttext = string(fileBytes)
+	lastfile = filepath.Base(path)
 	if noHeadTags {
 		re := regexp.MustCompile(`(?m)^---$(.|\n)*^---$`)
 		if found := re.Find(fileBytes); found != nil {
@@ -289,6 +320,7 @@ func getReadFile(path string) (FileContent, error) {
 	return FileContent{
 		Title: filepath.Base(path), // TODO parse File-Name.md syntax => File Name
 		// Body:  emoji.Emojitize(string(github_flavored_markdown.Markdown(fileBytes))),
-		Body: string(github_flavored_markdown.Markdown(fileBytes)),
+		Body:    string(github_flavored_markdown.Markdown(fileBytes)),
+		ChangeI: changeI,
 	}, nil
 }

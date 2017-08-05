@@ -10,7 +10,7 @@ function getWikiStatus() {
 	console.log("wiki status stored", gr);
 	if (!(gr === null || gr === "" || typeof(gr) === "undefined")) {
 		r = gr;
-		
+
 	}
 	r = r === "true" ? true : false;
 	return setWikiStatus(r);
@@ -20,7 +20,7 @@ function setWikiStatus(bool) {
 	return bool;
 }
 // https://stackoverflow.com/questions/8917921/cross-browser-javascript-not-jquery-scroll-to-top-animation
-function scrollToo(el, duration) { 
+function scrollToo(el, duration) {
   // var elOffset = $(el).offset().top;
   // console.log("elOffset", elOffset);
   // var elHeight = $(el).height();
@@ -38,22 +38,23 @@ function scrollToo(el, duration) {
   // var offset =  +
   var speed = 700;
   $('html, body').animate({scrollTop:$(el).offset().top - (window.innerHeight/2)}, speed);
+  $(el).hide();
 }
 // https://stackoverflow.com/questions/8024102/javascript-compare-strings-and-get-end-difference
 function getDiff(string_a, string_b) {
 	var first_occurance = string_b.indexOf(string_a);
 
   	if (!(first_occurance == -1)) {
-    	// alert('Search string Not found');   
+    	// alert('Search string Not found');
   	} else {
     	string_a_length = string_a.length;
     	if (first_occurance == 0) {
       		new_string = string_b.substring(string_a_length);
     	} else {
 	      	new_string = string_b.substring(0, first_occurance);
-	      	new_string += string_b.substring(first_occurance + string_a_length);  
+	      	new_string += string_b.substring(first_occurance + string_a_length);
     	}
- 	   
+
     	var diffFirstIndex = string_b.indexOf(new_string);
     	var firstInsertable = string_b.substring(diffFirstIndex, string_b.length);
     	firstInsertable = firstInsertable.indexOf(">")+1;
@@ -75,10 +76,10 @@ var load = function () {
 	var hudFilename = document.getElementById("hud-filename");
 	var hudWikiStatus = document.getElementById("wiki-status");
 	var hudUpdating = document.getElementById("hud-center");
-	
+
 	var parsed = "",
-	 diff = "", 
-	 lastBody = "", 
+	 diff = "",
+	 lastBody = "",
 	 lastWikiStatusBody = "";
 
 	ws = new WebSocket("ws://" + window.location.host + "/x/0");
@@ -141,7 +142,7 @@ var load = function () {
         setTimeout(function () {
         	$(hudUpdating).fadeOut(200);
         }, 200);
-        
+
 
 		// {title: "", body: ""}
 		parsed = JSON.parse(msg.data);
@@ -150,7 +151,7 @@ var load = function () {
 		// diff = getDiff(lastBody, parsed.body);
 		// console.log("diff", diff);
 		// lastBody = parsed.body;
-		// parsed.body = diff;	
+		// parsed.body = diff;
 
 
 		switch (stripSuffix(parsed.title)) {
@@ -165,20 +166,20 @@ var load = function () {
 			emojify.run(sidebar);
 			break;
 		default:
-			
+
 
 			body.innerHTML = parsed.body;
 			header.innerHTML = stripSuffix(parsed.title);
 			hudFilename.innerHTML = parsed.title;
 			emojify.run(body);
 			emojify.run(header);
-			if (lastWikiStatusBody == "") { 
+			if (lastWikiStatusBody == "") {
 				lastWikiStatusBody = parsed.body;
 			}
 			if (wikiStatus) {
 				lastWikiStatusBody = parsed.body;
 			}
-		}	
+		}
 		if (!wikiStatus) {
 			body.innerHTML = parsed.body;
 			header.innerHTML = stripSuffix(parsed.title);
@@ -189,6 +190,8 @@ var load = function () {
 		// if (stripSuffix(parsed.title) != "_Footer" && stripSuffix(parsed.title) != "_Sidebar") {
 		// 	debounce(scrollIt, 300);
 		// }
+
+		scrollIt();
 
 		var d = new Date();
 		var n = d.toTimeString();
@@ -204,16 +207,19 @@ var load = function () {
         //     hljs.highlightBlock(block);
         //   });
 
-        
+
 
 	}
 
 	function scrollIt() {
-		var changes = document.getElementsByClassName("change");
+		console.log("scorllit called!");
+		var changes = document.getElementsByClassName("suffix-change");
 		if (changes.length > 0) {
 			console.log("scrolling");
-			scrollToo(changes[0], 600);		
-		} 
+			scrollToo(changes[0], 600);
+		} else {
+			console.log("found no change marker");
+		}
 	}
 
 	document.onkeypress = function (e) {
