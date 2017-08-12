@@ -154,10 +154,10 @@ func main() {
 	// Echo is polite because it prioritizes these paths, so they can be overlapping,
 	// ie. ":filename" overlaps everything except /
 	r := echo.New()
-	r.File("/", filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "rotblauer", "wub", "index.html"))
+	r.File("/", filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "rotblauer", "wmd", "index.html"))
 	// Static assets.
-	r.Static("/assets", filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "rotblauer", "wub", "assets"))
-	r.Static("/node_modules/primer-css/build", filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "rotblauer", "wub", "node_modules/primer-css/build"))
+	r.Static("/assets", filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "rotblauer", "wmd", "assets"))
+	r.Static("/node_modules/primer-css/build", filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "rotblauer", "wmd", "node_modules/primer-css/build"))
 	// Websocket.
 	r.GET("/x/0", func(c echo.Context) error {
 		mm.HandleRequest(c.Response(), c.Request())
@@ -190,7 +190,7 @@ func main() {
 		setCurrentFile(filename)
 		// It is important with all this same-file-yness to NOT allow cacheing.
 		c.Response().Header().Set("Cache-Control: no-cache", "true")
-		return c.File(filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "rotblauer", "wub", "index.html"))
+		return c.File(filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "rotblauer", "wmd", "index.html"))
 		// c.Redirect(http.StatusMovedPermanently, "/")
 	})
 

@@ -1,6 +1,6 @@
 var ws;
 var toggleWikiStatus;
-var localStorageWikiKey = "wub_wiki_setting";
+var localStorageWikiKey = "wmd_wiki_setting";
 
 emojify.setConfig({img_dir : 'assets/emoji'});
 
