@@ -63,7 +63,6 @@ to toggle Github Wiki page style layout, which renders `_Sidebar.*` and
 `_Footer.*` in their respective places.
 
 ### Limitations and ~~shit~~ hit list
-- It does not scroll for you to your current changes... not sure if that's a limitation or a feature.
 - You have to `go get` it; wmd depends on external html, css, and image files and I don't
  have the patience to transfer them to bindata.
 - Otherwise it is perfect.
