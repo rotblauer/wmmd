@@ -22,6 +22,14 @@
 			body {
 				max-width: 100%;
 			}
+			.typewriter {
+				font-family: "Lucida Sans Typewriter", "Lucida Console", monaco, "Bitstream Vera Sans Mono", monospace;
+				line-height: 1.6em;
+				font-size: 1em;
+			}
+			#content-body.typewriter{
+				padding-top: 20vh !important;
+			}
 			#box {
 				padding: 30px;
 				min-height: 500px;
@@ -93,11 +101,13 @@
 				top: 0px;
 			}
 			#hud-center {
-				border-radius: 0.5em;
+				border-radius: 0.3em;
 				background-color: springgreen;
 				display: inline-block;
 				float: left;
 				margin-left: 0.4em;
+				height: 1em;
+				width: 1em;
 
 			}
 			#hud-center.hud.disconnected {
@@ -120,6 +130,15 @@
 			#no-info {
 				margin-top: 30vh;
 			}
+			span.hidden-newline:empty:before {
+			  content: "\200b"; // unicode zero width space character
+			}
+			blockquote span.hidden-newline:empty:before {
+			  content: ""; // unicode zero width space character
+			}
+			/*.hidden-newline {
+				min-height: 1.6em;
+			}*/
 		</style>
 		<script src="/assets/app.js?n=1"></script>
 	</head>
@@ -133,6 +152,10 @@
 	<div id="hud-right" class="hud">
 		<span id="hud-wiki" onclick="toggleWikiStatus()">
 			[w] Wiki: <span id="wiki-status"></span>
+		</span>
+		<br>
+		<span id="hud-typewriter" onclick="toggleTypewriterStatus()">
+			[t] Type: <span id="typewriter-status"></span>
 		</span>
 	</div>
 	<div id="no-info" class="blankslate blankslate-spacious blankslate-clean-background blankslate-large">

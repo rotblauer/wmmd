@@ -1,6 +1,8 @@
 var ws;
 var toggleWikiStatus;
+var toggleTypewriterStatus;
 var localStorageWikiKey = "wmd_wiki_setting";
+var localStorageTypewriterKey = "wmd_typewriter_setting";
 
 emojify.setConfig({img_dir : 'assets/emoji'});
 
@@ -17,6 +19,21 @@ function getWikiStatus() {
 }
 function setWikiStatus(bool) {
 	localStorage.setItem(localStorageWikiKey, bool);
+	return bool;
+}
+function getTypewriterStatus() {
+	var r = "false";
+	var gr = localStorage.getItem(localStorageTypewriterKey);
+	console.log("typewriter status stored", gr);
+	if (!(gr === null || gr === "" || typeof(gr) === "undefined")) {
+		r = gr;
+
+	}
+	r = r === "true" ? true : false;
+	return setTypewriterStatus(r);
+}
+function setTypewriterStatus(bool) {
+	localStorage.setItem(localStorageTypewriterKey, bool);
 	return bool;
 }
 // https://stackoverflow.com/questions/8917921/cross-browser-javascript-not-jquery-scroll-to-top-animation
@@ -76,6 +93,7 @@ var load = function () {
 	var lastEdited = document.getElementById("last-edited");
 	var hudFilename = document.getElementById("hud-filename");
 	var hudWikiStatus = document.getElementById("wiki-status");
+	var hudTypewriterStatus = document.getElementById("typewriter-status");
 	var hudUpdating = document.getElementById("hud-center");
 
 	var parsed = "",
@@ -90,6 +108,12 @@ var load = function () {
 		console.log("wiki", wikiStatus);
 		setDisplayFromWikiStatus(wikiStatus);
 	};
+
+	toggleTypewriterStatus = function () {
+		typewriterStatus = setTypewriterStatus(!typewriterStatus);
+		console.log("type", typewriterStatus);
+		setDisplayFromTypewriterStatus(typewriterStatus);
+	}
 
 	function stripSuffix(title) {
 		return title.replace(/\.[^/.]+$/, "")
@@ -123,8 +147,20 @@ var load = function () {
 		}
 		hudWikiStatus.innerHTML = wikiStatus;
 	}
+	function setDisplayFromTypewriterStatus(typewriterStatus) {
+		if (typewriterStatus) {
+			$("#content-body").addClass("typewriter");
+			$("#content-header").addClass("typewriter");
+		} else {
+			$("#content-body").removeClass("typewriter");
+			$("#content-header").removeClass("typewriter");
+		}
+		hudTypewriterStatus.innerHTML = typewriterStatus;
+	}
 	var wikiStatus = getWikiStatus();
 	setDisplayFromWikiStatus(wikiStatus);
+	var typewriterStatus = getTypewriterStatus();
+	setDisplayFromTypewriterStatus(typewriterStatus);
 
 	ws.onopen = function (msg) {
 		console.log("connected");
@@ -135,13 +171,23 @@ var load = function () {
 		hudUpdating.classList.add("disconnected");
 
 	}
-	var haveFooter = false;
-	var haveSidebar = false;
+	function showOrHideFandS() {
+		var haveFooter = footer.innerHTML === "" ? false : true;
+		var haveSidebar = sidebar.innerHTML === "" ? false : true;
+
+		if (!haveFooter) {
+			footer.style.display = "none";
+		}
+		if (!haveSidebar) {
+			sidebar.style.display = "none";
+		}
+	}
 	ws.onmessage = function (msg) {
+
 		// hudUpdating.classList.remove("disconnected");
         $(hudUpdating).fadeIn(200);
         setTimeout(function () {
-        	$(hudUpdating).fadeOut(200);
+        	$(hudUpdating).fadeOut(400);
         }, 200);
 
 
@@ -162,12 +208,10 @@ var load = function () {
 
 		switch (stripSuffix(parsed.title)) {
 		case "_Footer":
-			haveFooter = true;
 			footer.innerHTML = parsed.body;
 			emojify.run(footer);
 			break;
 		case "_Sidebar":
-            haveSidebar = true;
 			sidebar.innerHTML = parsed.body;
 			emojify.run(sidebar);
 			break;
@@ -202,12 +246,7 @@ var load = function () {
 		var d = new Date();
 		var n = d.toTimeString();
 		lastEdited.innerHTML = "you last updated this at " + n;
-		if (!haveFooter) {
-			footer.style.display = "none";
-		}
-        if (!haveSidebar) {
-            sidebar.style.display = "none";
-        }
+		debounce(showOrHideFandS,200);
 
         // $('div.highlight').each(function(i, block) {
         //     hljs.highlightBlock(block);
@@ -232,10 +271,15 @@ var load = function () {
 		console.log("keypress", e);
 		e = e || window.event;
 		// 119 == 'w'
-		if (e.keyCode == '119') {
+		if (e.keyCode === 119) {
 			toggleWikiStatus();
 		}
+		if (e.keyCode === 116) {
+			toggleTypewriterStatus();
+		}
+		showOrHideFandS();
 	}
+
 
 	$(hudUpdating).on("click", function (e) {
 		window.location.reload(true);

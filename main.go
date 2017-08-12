@@ -24,6 +24,7 @@ var port int
 var dirPath string
 var currentFile string
 var noHeadTags bool
+var hardLineBreaks bool
 
 var dmp *diff.DiffMatchPatch
 
@@ -49,6 +50,7 @@ func init() {
 	name: Home
 	category: documentation
 	---`)
+	flag.BoolVar(&hardLineBreaks, "n", false, "Enable hard line breaks.")
 
 	dmp = diff.New()
 }
@@ -300,6 +302,13 @@ func getFilePathFromParam(param string) string {
 
 func getReadFile(path string) (FileContent, error) {
 	fileBytes, e := ioutil.ReadFile(path)
+	if hardLineBreaks {
+		blanknewlinere := regexp.MustCompile(`\n\n`)
+		fileBytes = blanknewlinere.ReplaceAll(fileBytes, []byte("<p class='an-newline'><span class='hidden-newline'></span></p>\n"))
+		fString := string(fileBytes)
+		fString = strings.Replace(fString, "\n", "\n\n", -1)
+		fileBytes = []byte(fString)
+	}
 	if e != nil {
 		log.Println(e)
 		return FileContent{}, e
