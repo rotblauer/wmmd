@@ -166,7 +166,7 @@ func main() {
 	// Any other filename.
 	r.Any("/*", func(c echo.Context) error { // :filename
 		//p := c.Param("filename")
-		var p string = dirPath
+		p := dirPath
 		for _, v := range c.ParamValues() {
 			p = filepath.Join(p, v)
 		}
@@ -263,41 +263,38 @@ func filepathIsResource(path string) bool {
 	return ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".svg" || ext == ".tiff" || ext == ".gif"
 }
 
+func checkExistsOrAppend(filename string) (bool, string) {
+	if fi, e := os.Stat(filename); e == nil && !fi.IsDir() {
+		return true, filename
+	}
+	if ext := filepath.Ext(filename); ext != "" {
+		return true, filename
+	}
+	for _, ext := range []string{".md", ".markdown", ".mdown", ".adoc", ".txt"} {
+		fname := filename + ext
+		if i, e := os.Stat(fname); e == nil && !i.IsDir() {
+			return true, fname
+		}
+	}
+	return false, ""
+}
+
 func getFilePathFromParam(param string) string {
 	filename := param
 	if filename == "" {
 		return ""
 	}
 	if filepath.IsAbs(filename) {
-		if fi, e := os.Stat(filename); e == nil && !fi.IsDir() {
-			return filename
-		}
-		if ext := filepath.Ext(filename); ext != "" {
-			return filename
-		}
-		for _, ext := range []string{".md", ".markdown", ".mdown", ".adoc", ".txt"} {
-			fname := filename + ext
-			if i, e := os.Stat(fname); e == nil && !i.IsDir() {
-				return fname
-			}
+		ok, gotname := checkExistsOrAppend(filename)
+		if ok {
+			return gotname
 		}
 	}
-
 	filename = filepath.Join(dirPath, filename)
-	if fi, e := os.Stat(filename); e == nil && !fi.IsDir() {
-		return filepath.Join(dirPath, fi.Name())
+	ok, gotname := checkExistsOrAppend(filename)
+	if ok {
+		return gotname
 	}
-	if ext := filepath.Ext(filename); ext != "" {
-		return filename
-	}
-
-	for _, ext := range []string{".md", ".markdown", ".mdown", ".adoc", ".txt"} {
-		fname := filename + ext
-		if i, e := os.Stat(fname); e == nil && !i.IsDir() {
-			return fname
-		}
-	}
-
 	return filename
 }
 
@@ -325,7 +322,7 @@ func getReadFile(path string) (FileContent, error) {
 				hiddenChangeTag := `<span class="suffix-change">CHANGED</span>`
 
 				changeI = getCommSuffixI(ffs)
-				if changeI != 0 && len(ffs)-1 != changeI {
+				if changeI > 1 && len(ffs)-1 != changeI {
 					log.Println("comm suffix: ", changeI)
 					ffs = ffs[:len(ffs)-changeI] + hiddenChangeTag + ffs[len(ffs)-changeI:]
 				} else {
@@ -354,7 +351,8 @@ func getReadFile(path string) (FileContent, error) {
 	}
 	rp, e := filepath.Rel(dirPath, path)
 	if e != nil {
-		return FileContent{}, e
+		log.Println(e)
+		rp = path
 	}
 	return FileContent{
 		Title: rp, // TODO parse File-Name.md syntax => File Name

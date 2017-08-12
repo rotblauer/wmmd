@@ -149,6 +149,11 @@ var load = function () {
 		parsed = JSON.parse(msg.data);
 		console.log("got message", msg);
 
+		if (parsed.body !== "" && parsed.title !== "") {
+			$('#no-info').hide();
+			$("#box").show();
+		}
+
 		// diff = getDiff(lastBody, parsed.body);
 		// console.log("diff", diff);
 		// lastBody = parsed.body;

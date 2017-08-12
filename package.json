@@ -15,6 +15,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "octicons": "^5.0.1",
     "primer-css": "^6.0.0"
   }
 }
