@@ -182,6 +182,9 @@ var load = function () {
 			sidebar.style.display = "none";
 		}
 	}
+	function handleNewlines() {
+		$("span.hidden-newline").parent().css("margin-bottom", "0");
+	}
 	ws.onmessage = function (msg) {
 
 		// hudUpdating.classList.remove("disconnected");
@@ -247,6 +250,7 @@ var load = function () {
 		var n = d.toTimeString();
 		lastEdited.innerHTML = "you last updated this at " + n;
 		debounce(showOrHideFandS,200);
+		handleNewlines();
 
         // $('div.highlight').each(function(i, block) {
         //     hljs.highlightBlock(block);
