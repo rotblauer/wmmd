@@ -18,6 +18,9 @@ import (
 	"github.com/rjeczalik/notify"
 	diff "github.com/sergi/go-diff/diffmatchpatch"
 	"github.com/shurcooL/github_flavored_markdown"
+	"os/exec"
+	"bytes"
+	"bufio"
 )
 
 var port int
@@ -25,6 +28,7 @@ var dirPath string
 var currentFile string
 var noHeadTags bool
 var hardLineBreaks bool
+var adoc bool
 
 var dmp *diff.DiffMatchPatch
 
@@ -51,6 +55,7 @@ func init() {
 	category: documentation
 	---`)
 	flag.BoolVar(&hardLineBreaks, "n", false, "Enable hard line breaks.")
+	flag.BoolVar(&adoc, "adoc", false, "Use adoc conversion instead of markdown.")
 
 	dmp = diff.New()
 }
@@ -349,11 +354,25 @@ func getReadFile(path string) (FileContent, error) {
 	}
 	if noHeadTags {
 		re := regexp.MustCompile(`(?m)^---$(.|\n)*^---$`)
+		reDashes := regexp.MustCompile(`^---$`)
 		if found := re.Find(fileBytes); found != nil {
-			log.Println("found header tags match, removing")
-			firstOccur := re.FindAllString(string(fileBytes), 1)
-			log.Println(firstOccur)
-			fileBytes = []byte(strings.Replace(string(fileBytes), firstOccur[0], "", 1))
+			reader := bytes.NewReader(fileBytes)
+			scanner := bufio.NewScanner(reader)
+			c := 0
+			e := 0
+			fbclean := [][]byte{}
+			for scanner.Scan() {
+				if reDashes.Match(scanner.Bytes()) {
+					c++
+				}
+				if c == 2 {
+					e++
+				}
+				if c >= 2 && e > 1 {
+					fbclean = append(fbclean, scanner.Bytes())
+				}
+			}
+			fileBytes = bytes.Join(fbclean, []byte("\n"))
 		} else {
 			log.Println("no matching tags found, continuing")
 		}
@@ -363,10 +382,50 @@ func getReadFile(path string) (FileContent, error) {
 		log.Println(e)
 		rp = path
 	}
+
+	var body string
+	if !adoc {
+		body = string(github_flavored_markdown.Markdown(fileBytes))
+	} else {
+		body = GetAsciidocContent(fileBytes)
+	}
 	return FileContent{
 		Title: rp, // TODO parse File-Name.md syntax => File Name
 		// Body:  emoji.Emojitize(string(github_flavored_markdown.Markdown(fileBytes))),
-		Body:    string(github_flavored_markdown.Markdown(fileBytes)),
+		Body:    body,
 		ChangeI: changeI,
 	}, nil
+}
+
+// GetAsciidocContent calls asciidoctor or asciidoc as an external helper
+// to convert AsciiDoc content to HTML.
+func GetAsciidocContent(content []byte) string {
+	cleanContent := content // bytes.Replace(content, SummaryDivider, []byte(""), 1)
+
+	path, err := exec.LookPath("asciidoctor")
+	if err != nil {
+		path, err = exec.LookPath("asciidoc")
+		if err != nil {
+			log.Println("asciidoctor / asciidoc not found in $PATH: Please install.\n",
+				"                 Leaving AsciiDoc content unrendered.")
+			return(string(content))
+		}
+	}
+
+	log.Println("Rendering with", path, "...")
+	cmd := exec.Command(path, "--safe", "-")
+	cmd.Stdin = bytes.NewReader(cleanContent)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	if err := cmd.Run(); err != nil {
+		log.Println(err)
+	}
+
+	asciidocLines := strings.Split(out.String(), "\n")
+	for i, line := range asciidocLines {
+		if strings.HasPrefix(line, "<body") {
+			asciidocLines = (asciidocLines[i+1 : len(asciidocLines)-3])
+		}
+	}
+	return strings.Join(asciidocLines, "\n")
 }
