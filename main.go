@@ -55,7 +55,6 @@ func init() {
 	category: documentation
 	---`)
 	flag.BoolVar(&hardLineBreaks, "n", false, "Enable hard line breaks.")
-	flag.BoolVar(&adoc, "adoc", false, "Use adoc conversion instead of markdown.")
 
 	dmp = diff.New()
 }
@@ -207,7 +206,13 @@ func main() {
 
 func filepathIsMarkdown(path string) bool {
 	ff := filepath.Ext(path)
-	return !(ff != "" && ff != ".md" && ff != ".markdown" && ff != ".mdown" && ff != ".adoc" && ff != ".txt")
+	is := !(ff != "" && ff != ".md" && ff != ".markdown" && ff != ".mdown" && ff != ".adoc" && ff != ".txt")
+	if is && ff == ".adoc" {
+		adoc = true
+	} else {
+		adoc = false
+	}
+	return is
 }
 
 func filepathIsExcluded(path string) bool {
@@ -353,29 +358,7 @@ func getReadFile(path string) (FileContent, error) {
 		lastfile = filepath.Base(path)
 	}
 	if noHeadTags {
-		re := regexp.MustCompile(`(?m)^---$(.|\n)*^---$`)
-		reDashes := regexp.MustCompile(`^---$`)
-		if found := re.Find(fileBytes); found != nil {
-			reader := bytes.NewReader(fileBytes)
-			scanner := bufio.NewScanner(reader)
-			c := 0
-			e := 0
-			fbclean := [][]byte{}
-			for scanner.Scan() {
-				if reDashes.Match(scanner.Bytes()) {
-					c++
-				}
-				if c == 2 {
-					e++
-				}
-				if c >= 2 && e > 1 {
-					fbclean = append(fbclean, scanner.Bytes())
-				}
-			}
-			fileBytes = bytes.Join(fbclean, []byte("\n"))
-		} else {
-			log.Println("no matching tags found, continuing")
-		}
+		fileBytes = stripHeaderTagMetadata(fileBytes)
 	}
 	rp, e := filepath.Rel(dirPath, path)
 	if e != nil {
@@ -387,7 +370,7 @@ func getReadFile(path string) (FileContent, error) {
 	if !adoc {
 		body = string(github_flavored_markdown.Markdown(fileBytes))
 	} else {
-		body = GetAsciidocContent(fileBytes)
+		body = getAsciidocContent(fileBytes)
 	}
 	return FileContent{
 		Title: rp, // TODO parse File-Name.md syntax => File Name
@@ -397,9 +380,40 @@ func getReadFile(path string) (FileContent, error) {
 	}, nil
 }
 
-// GetAsciidocContent calls asciidoctor or asciidoc as an external helper
+// hack: this is a weird ugly way to to it
+// problem was matching only the first occurrence of a regex group pattern...
+func stripHeaderTagMetadata(infile []byte) []byte {
+	outfile := infile
+	re := regexp.MustCompile(`(?m)^---$(.|\n)*^---$`) // has header tag regex
+	reDashes := regexp.MustCompile(`^---$`) // header tag sep regex
+	if found := re.Find(infile); found != nil {
+		reader := bytes.NewReader(infile)
+		scanner := bufio.NewScanner(reader)
+		c := 0 // count how many header tag seps we find. only want file text AFTER the second match
+		e := 0 // tally how many lines we are after second match... we want to only include >= matchline+1
+		fbclean := [][]byte{}
+		for scanner.Scan() {
+			if reDashes.Match(scanner.Bytes()) {
+				c++
+			}
+			if c >= 2 {
+				e++
+			}
+			if c >= 2 && e > 1 {
+				fbclean = append(fbclean, scanner.Bytes())
+			}
+		}
+		outfile = bytes.Join(fbclean, []byte("\n"))
+	} else {
+		log.Println("no matching tags found, continuing")
+	}
+	return outfile
+}
+
+// getAsciidocContent calls asciidoctor or asciidoc as an external helper
 // to convert AsciiDoc content to HTML.
-func GetAsciidocContent(content []byte) string {
+// https://github.com/gohugoio/hugo/pull/826/files
+func getAsciidocContent(content []byte) string {
 	cleanContent := content // bytes.Replace(content, SummaryDivider, []byte(""), 1)
 
 	path, err := exec.LookPath("asciidoctor")
