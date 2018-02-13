@@ -3,7 +3,7 @@
 > Delivers live-reloaded markdown files from a directory to your browser,
 watching recursively for changes to render the one you're working on.
 
-![wmd-screenshot](./wmd.png)
+![wmd-gif](./wmd.gif)
 
 ----
 
