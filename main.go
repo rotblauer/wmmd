@@ -21,6 +21,7 @@ import (
 	"os/exec"
 	"bytes"
 	"bufio"
+	"fmt"
 )
 
 var port int
@@ -29,6 +30,7 @@ var currentFile string
 var noHeadTags bool
 var hardLineBreaks bool
 var adoc bool
+var scrollSpy bool
 
 var dmp *diff.DiffMatchPatch
 
@@ -55,6 +57,7 @@ func init() {
 	category: documentation
 	---`)
 	flag.BoolVar(&hardLineBreaks, "n", false, "Enable hard line breaks.")
+	flag.BoolVar(&scrollSpy, "s", true, "Enable or disable automatic scrolling to most recent change.")
 
 	dmp = diff.New()
 }
@@ -334,25 +337,26 @@ func getReadFile(path string) (FileContent, error) {
 		if lastfile == filepath.Base(path) && lasttext != string(fileBytes) {
 			log.Println("could update diff")
 			if fbn := filepath.Base(path); !strings.Contains(fbn, "Sidebar") && !strings.Contains(fbn, "Footer") {
+				if scrollSpy {
+					log.Println("updating diff")
 
-				log.Println("updating diff")
+					ffs = string(fileBytes)
+					hiddenChangeTag := `<span class="suffix-change">CHANGED</span>`
 
-				ffs = string(fileBytes)
-				hiddenChangeTag := `<span class="suffix-change">CHANGED</span>`
+					changeI = getCommSuffixI(ffs)
+					if changeI > 1 && len(ffs)-1 != changeI {
+						log.Println("comm suffix: ", changeI)
+						ffs = ffs[:len(ffs)-changeI] + hiddenChangeTag + ffs[len(ffs)-changeI:]
+					} else {
+						changeI = getCommPrefix(ffs)
+						log.Println("comm prefix: ", changeI)
+						ffs = ffs[:changeI] + hiddenChangeTag + ffs[changeI:]
+					}
 
-				changeI = getCommSuffixI(ffs)
-				if changeI > 1 && len(ffs)-1 != changeI {
-					log.Println("comm suffix: ", changeI)
-					ffs = ffs[:len(ffs)-changeI] + hiddenChangeTag + ffs[len(ffs)-changeI:]
-				} else {
-					changeI = getCommPrefix(ffs)
-					log.Println("comm prefix: ", changeI)
-					ffs = ffs[:changeI] + hiddenChangeTag + ffs[changeI:]
+					// Order matters here.
+					lasttext = string(fileBytes)
+					fileBytes = []byte(ffs)
 				}
-
-				// Order matters here.
-				lasttext = string(fileBytes)
-				fileBytes = []byte(ffs)
 			}
 		}
 		lastfile = filepath.Base(path)
@@ -387,26 +391,60 @@ func stripHeaderTagMetadata(infile []byte) []byte {
 	re := regexp.MustCompile(`(?m)^---$(.|\n)*^---$`) // has header tag regex
 	reDashes := regexp.MustCompile(`^---$`) // header tag sep regex
 	if found := re.Find(infile); found != nil {
+		log.Println("Found top to take off...")
 		reader := bytes.NewReader(infile)
 		scanner := bufio.NewScanner(reader)
+		buf := bytes.Buffer{}
+		writer := bufio.NewWriter(&buf)
+		lnum := 0
 		c := 0 // count how many header tag seps we find. only want file text AFTER the second match
 		e := 0 // tally how many lines we are after second match... we want to only include >= matchline+1
-		fbclean := [][]byte{}
+		//fbclean := [][]byte{}
 		for scanner.Scan() {
+			lnum++
 			if reDashes.Match(scanner.Bytes()) {
 				c++
+				log.Printf("Found head delimiter match at line: %d", lnum)
 			}
 			if c >= 2 {
 				e++
 			}
 			if c >= 2 && e > 1 {
-				fbclean = append(fbclean, scanner.Bytes())
+				//log.Printf("Appending line: %d", lnum) // debug
+				//fbclean = append(fbclean, scanner.Bytes())
+				bs := append(scanner.Bytes(), []byte("\n")...)
+				if _, err := writer.Write(bs); err != nil {
+					log.Println("ERROR WRITE BUF BYTES", err)
+				} else {
+					writer.Flush()
+				}
+				//if e == 2 {
+					log.Printf("%s", string(scanner.Bytes()))
+				//}
 			}
 		}
-		outfile = bytes.Join(fbclean, []byte("\n"))
+
+		//lineBreakRe := regexp.MustCompile(`\n$`)
+		//fbDoubleClean := [][]byte{}
+		//for _, l := range fbclean {
+		//	line := l
+		//	if !lineBreakRe.Match(l) {
+		//		line = []byte(string(line) + "\n")
+		//	}
+		//	fbDoubleClean = append(fbDoubleClean, line)
+		//}
+		//outfile = bytes.Join(fbDoubleClean, []byte(""))
+
+		//outfile = bytes.Join(fbclean, []byte("\n"))
+		if err := scanner.Err(); err != nil {
+			log.Println("SCANNER ERROR: %v", err)
+		}
+		outfile = buf.Bytes()
 	} else {
 		log.Println("no matching tags found, continuing")
 	}
+
+	fmt.Println(string(outfile))
 	return outfile
 }
 
