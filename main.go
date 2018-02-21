@@ -399,7 +399,6 @@ func stripHeaderTagMetadata(infile []byte) []byte {
 		lnum := 0
 		c := 0 // count how many header tag seps we find. only want file text AFTER the second match
 		e := 0 // tally how many lines we are after second match... we want to only include >= matchline+1
-		//fbclean := [][]byte{}
 		for scanner.Scan() {
 			lnum++
 			if reDashes.Match(scanner.Bytes()) {
@@ -411,31 +410,15 @@ func stripHeaderTagMetadata(infile []byte) []byte {
 			}
 			if c >= 2 && e > 1 {
 				//log.Printf("Appending line: %d", lnum) // debug
-				//fbclean = append(fbclean, scanner.Bytes())
 				bs := append(scanner.Bytes(), []byte("\n")...)
 				if _, err := writer.Write(bs); err != nil {
 					log.Println("ERROR WRITE BUF BYTES", err)
 				} else {
 					writer.Flush()
 				}
-				//if e == 2 {
-					log.Printf("%s", string(scanner.Bytes()))
-				//}
+				//log.Printf("%s", string(scanner.Bytes())) // debug
 			}
 		}
-
-		//lineBreakRe := regexp.MustCompile(`\n$`)
-		//fbDoubleClean := [][]byte{}
-		//for _, l := range fbclean {
-		//	line := l
-		//	if !lineBreakRe.Match(l) {
-		//		line = []byte(string(line) + "\n")
-		//	}
-		//	fbDoubleClean = append(fbDoubleClean, line)
-		//}
-		//outfile = bytes.Join(fbDoubleClean, []byte(""))
-
-		//outfile = bytes.Join(fbclean, []byte("\n"))
 		if err := scanner.Err(); err != nil {
 			log.Println("SCANNER ERROR: %v", err)
 		}
