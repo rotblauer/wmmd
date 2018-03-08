@@ -1,4 +1,4 @@
-# Wmd
+# WMMD: Weapon of Mass Markdown
 
 > Delivers live-reloaded markdown files from a directory to your browser,
 watching recursively for changes to render the one you're working on.
@@ -14,32 +14,32 @@ about hitting a Github API rate limit.
 
 ### Installation
 ```shell
-$ go get github.com/rotblauer/wmd/...
-$ go install github.com/rotblauer/wmd
-$ which wmd
-> $GOPATH/bin/wmd
+$ go get github.com/rotblauer/wmmd/...
+$ go install github.com/rotblauer/wmmd
+$ which wmmd
+> $GOPATH/bin/wmmd
 ```
 
 ### Usage
-Wmd is simple. Point it a directory and run.
+Wmmd is simple. Point it a directory and run.
 
 It will open to the last edited markdown file in that directory.
 Then, just edit any markdown file in that directory or any subdirectory
-and wmd will detect that change and render it.
+and wmmd will detect that change and render it.
 
 Relative links will be functional, i.e. `./Instructions.md` or `./Instructions`.
-Relative image resources should work too (wmd attempts some cleverness because
+Relative image resources should work too (wmmd attempts some cleverness because
 Github requires relative image paths to be prefixed with `/wiki`).
 
 __Basic:__
 ```shell
 $ cd my/markdown/directory
-$ wmd
+$ wmmd
 ```
 
 __Options:__
 ```shell
-$ wmd [--options] [PATH]
+$ wmmd [--options] [PATH]
 ```
 
 | Option | Default | About |
@@ -65,6 +65,6 @@ to toggle Github Wiki page style layout, which renders `_Sidebar.*` and
 ### Limitations and ~~shit~~ hit list
 - Sometimes the auto-scroll gets weird.
 
-- You have to `go get` it; wmd depends on external html, css, and image files and I don't
+- You have to `go get` it; wmmd depends on external html, css, and image files and I don't
  have the patience to transfer them to bindata.
 - Otherwise it is perfect.
