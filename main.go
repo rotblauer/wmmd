@@ -21,7 +21,6 @@ import (
 	"os/exec"
 	"bytes"
 	"bufio"
-	"fmt"
 )
 
 var port int
@@ -426,8 +425,6 @@ func stripHeaderTagMetadata(infile []byte) []byte {
 	} else {
 		log.Println("no matching tags found, continuing")
 	}
-
-	fmt.Println(string(outfile))
 	return outfile
 }
 
