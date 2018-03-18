@@ -13,14 +13,15 @@ import (
 	"strings"
 	"time"
 
+	"bufio"
+	"bytes"
+	"os/exec"
+
 	"github.com/labstack/echo"
 	"github.com/olahol/melody"
 	"github.com/rjeczalik/notify"
 	diff "github.com/sergi/go-diff/diffmatchpatch"
 	"github.com/shurcooL/github_flavored_markdown"
-	"os/exec"
-	"bytes"
-	"bufio"
 )
 
 var port int
@@ -162,10 +163,10 @@ func main() {
 	// Echo is polite because it prioritizes these paths, so they can be overlapping,
 	// ie. ":filename" overlaps everything except /
 	r := echo.New()
-	r.File("/", filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "rotblauer", "wmd", "index.html"))
+	r.File("/", filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "rotblauer", "wmmd", "index.html"))
 	// Static assets.
-	r.Static("/assets", filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "rotblauer", "wmd", "assets"))
-	r.Static("/node_modules/primer-css/build", filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "rotblauer", "wmd", "node_modules/primer-css/build"))
+	r.Static("/assets", filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "rotblauer", "wmmd", "assets"))
+	r.Static("/node_modules/primer-css/build", filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "rotblauer", "wmmd", "node_modules/primer-css/build"))
 	// Websocket.
 	r.GET("/x/0", func(c echo.Context) error {
 		mm.HandleRequest(c.Response(), c.Request())
@@ -388,7 +389,7 @@ func getReadFile(path string) (FileContent, error) {
 func stripHeaderTagMetadata(infile []byte) []byte {
 	outfile := infile
 	re := regexp.MustCompile(`(?m)^---$(.|\n)*^---$`) // has header tag regex
-	reDashes := regexp.MustCompile(`^---$`) // header tag sep regex
+	reDashes := regexp.MustCompile(`^---$`)           // header tag sep regex
 	if found := re.Find(infile); found != nil {
 		log.Println("Found top to take off...")
 		reader := bytes.NewReader(infile)
@@ -440,7 +441,7 @@ func getAsciidocContent(content []byte) string {
 		if err != nil {
 			log.Println("asciidoctor / asciidoc not found in $PATH: Please install.\n",
 				"                 Leaving AsciiDoc content unrendered.")
-			return(string(content))
+			return (string(content))
 		}
 	}
 
