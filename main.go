@@ -199,7 +199,7 @@ func main() {
 		setCurrentFile(filename)
 		// It is important with all this same-file-yness to NOT allow cacheing.
 		c.Response().Header().Set("Cache-Control: no-cache", "true")
-		return c.File(filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "rotblauer", "wmd", "index.html"))
+		return c.File(filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "rotblauer", "wmmd", "index.html"))
 		// c.Redirect(http.StatusMovedPermanently, "/")
 	})
 

@@ -46,9 +46,11 @@ $ wmmd [--options] [PATH]
 |---|---|---|
 | `--port` | 3000 | Specify port to serve on |
 | `--topless` | false | Remove leading tags from file |
+| `-n` | false | Enable hard line breaks for markdown conversion |
+| `-s` | true | Scroll to latest changes automatically |
 | `PATH` | `$CWD` | May be an absolute or relative path |
 
-The `--topless` option removes:
+The `--topless` option removes anything like:
 ```md
 ---
 name: Home
@@ -62,9 +64,11 @@ Press `w`, or click the light gray button in the top right,
 to toggle Github Wiki page style layout, which renders `_Sidebar.*` and
 `_Footer.*` in their respective places.
 
+#### Text mode
+Press `t`, or click the light gray button in the top right, to toggle typwriter-like styling, replacing the standard Github flavored appearance.
+
 ### Limitations and ~~shit~~ hit list
 - Sometimes the auto-scroll gets weird.
 
 - You have to `go get` it; wmmd depends on external html, css, and image files and I don't
  have the patience to transfer them to bindata.
-- Otherwise it is perfect.
