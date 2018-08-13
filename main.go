@@ -24,29 +24,25 @@ import (
 	"github.com/shurcooL/github_flavored_markdown"
 )
 
-var port int
-var dirPath string
-var currentFile string
-var noHeadTags bool
-var hardLineBreaks bool
-var adoc bool
-var scrollSpy bool
+var (
+	extResources = []string{".png", ".jpg", ".jpeg", ".svg", ".tiff", ".gif"}
+	extMarkdown  = []string{".md", ".markdown", ".mdown", ".adoc", ".txt"}
+	extExcluded  = []string{".git", ".idea"}
 
-var dmp *diff.DiffMatchPatch
+	// global vars
+	dirPath     string
+	currentFile string
+	lastfile    string
+	lasttext    string
+	dmp         *diff.DiffMatchPatch
 
-type FileContent struct {
-	Title   string `json:"title"`
-	Body    string `json:"body"`
-	ChangeI int    `json:"changeIndex"`
-}
-
-func setCurrentFile(path string) {
-	currentFile = path
-}
-
-func getCurrentFile() string {
-	return currentFile
-}
+	// user preferences
+	port           int
+	noHeadTags     bool
+	hardLineBreaks bool
+	adoc           bool
+	scrollSpy      bool
+)
 
 func init() {
 	flag.IntVar(&port, "port", 3000, "port to serve on")
@@ -60,19 +56,6 @@ func init() {
 	flag.BoolVar(&scrollSpy, "s", true, "Enable or disable automatic scrolling to most recent change.")
 
 	dmp = diff.New()
-}
-
-var lastfile string
-var lasttext string
-
-func getCommSuffixI(s1 string) (commongSuffixIndex int) {
-	commongSuffixIndex = dmp.DiffCommonSuffix(lasttext, s1)
-	return commongSuffixIndex
-}
-
-func getCommPrefix(s1 string) int {
-	commonPrefixI := dmp.DiffCommonPrefix(lasttext, s1)
-	return commonPrefixI
 }
 
 func main() {
@@ -128,12 +111,12 @@ func main() {
 				if ei, ee := os.Stat(event.Path()); ee != nil || (ei != nil && ei.IsDir()) {
 					continue
 				}
-				if filepathIsExcluded(event.Path()) {
+				if filepathMatches(event.Path(), extExcluded) {
 					// log.Println("excluded path, continuing...")
 					continue
 				}
 				// log.Println("event:", event)
-				if !filepathIsMarkdown(event.Path()) {
+				if !filepathMatches(event.Path(), extMarkdown) {
 					// log.Println("not markdown file, continuing...")
 					continue
 				}
@@ -180,7 +163,7 @@ func main() {
 			p = filepath.Join(p, v)
 		}
 		log.Println("path", p)
-		if filepathIsResource(p) {
+		if filepathMatches(p, extResources) {
 			log.Println("resource request: filename:", p)
 			e := c.File(p)
 			if e != nil {
@@ -207,21 +190,6 @@ func main() {
 	r.Logger.Fatal(r.Start(":" + strconv.Itoa(port)))
 }
 
-func filepathIsMarkdown(path string) bool {
-	ff := filepath.Ext(path)
-	is := !(ff != "" && ff != ".md" && ff != ".markdown" && ff != ".mdown" && ff != ".adoc" && ff != ".txt")
-	if is && ff == ".adoc" {
-		adoc = true
-	} else {
-		adoc = false
-	}
-	return is
-}
-
-func filepathIsExcluded(path string) bool {
-	return strings.Contains(path, ".git") || strings.Contains(path, ".idea")
-}
-
 func getLastUpdated(path string) (filename string) {
 	fs, fe := ioutil.ReadDir(path)
 	if fe != nil {
@@ -235,7 +203,7 @@ func getLastUpdated(path string) (filename string) {
 		if ff.IsDir() {
 			continue
 		}
-		if !filepathIsMarkdown(ff.Name()) {
+		if !filepathMatches(ff.Name(), extMarkdown) {
 			continue
 		}
 		if ff.ModTime().After(latestMod) {
@@ -273,11 +241,6 @@ func mustMakeDirPath() string {
 	return abs
 }
 
-func filepathIsResource(path string) bool {
-	ext := filepath.Ext(path)
-	return ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".svg" || ext == ".tiff" || ext == ".gif"
-}
-
 func checkExistsOrAppend(filename string) (bool, string) {
 	if fi, e := os.Stat(filename); e == nil && !fi.IsDir() {
 		return true, filename
@@ -285,7 +248,7 @@ func checkExistsOrAppend(filename string) (bool, string) {
 	if ext := filepath.Ext(filename); ext != "" {
 		return true, filename
 	}
-	for _, ext := range []string{".md", ".markdown", ".mdown", ".adoc", ".txt"} {
+	for _, ext := range extMarkdown {
 		fname := filename + ext
 		if i, e := os.Stat(fname); e == nil && !i.IsDir() {
 			return true, fname
@@ -461,4 +424,12 @@ func getAsciidocContent(content []byte) string {
 		}
 	}
 	return strings.Join(asciidocLines, "\n")
+}
+
+func setCurrentFile(path string) {
+	currentFile = path
+}
+
+func getCurrentFile() string {
+	return currentFile
 }
