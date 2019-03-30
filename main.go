@@ -419,9 +419,10 @@ func getReadFile(path string) (FileContent, error) {
 	} else {
 		body = getAsciidocContent(fileBytes)
 	}
+
 	return FileContent{
 		Title: rp, // TODO parse File-Name.md syntax => File Name
-		// Body:  emoji.Emojitize(string(github_flavored_markdown.Markdown(fileBytes))),
+		// Body:    emoji.Emojitize(string(github_flavored_markdown.Markdown(fileBytes))),
 		Body:    body,
 		ChangeI: changeI,
 	}, nil
