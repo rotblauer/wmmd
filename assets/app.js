@@ -43,6 +43,13 @@ function scrollToo(el, duration) {
   el.style.display = 'none';
 }
 
+function highlighter() {
+	document.querySelectorAll('div.highlight').forEach((block) => {
+		console.log("highlighting block");
+		hljs.highlightBlock(block);
+	});
+}
+
 var load = function () {
 	console.log("hello");
 
@@ -155,7 +162,7 @@ var load = function () {
         }, 200);
 
 		parsed = JSON.parse(msg.data);
-		console.log("got message", msg);
+		// console.log("got message", msg);
 
 		if (parsed.body !== "" && parsed.title !== "") {
 			$('#no-info').hide();
@@ -201,6 +208,8 @@ var load = function () {
 		lastEdited.innerHTML = "you last updated this at " + n;
 		debounce(showOrHideFandS,200);
 		handleNewlines();
+
+		highlighter();
 	}
 
 	function scrollIt() {
