@@ -25,9 +25,10 @@ import (
 )
 
 var (
-	extResources = []string{".png", ".jpg", ".jpeg", ".svg", ".tiff", ".gif"}
-	extMarkdown  = []string{".md", ".markdown", ".mdown", ".adoc", ".txt"}
-	extExcluded  = []string{".git", ".idea", ".directory"}
+	extResources      = []string{".png", ".jpg", ".jpeg", ".svg", ".tiff", ".gif"}
+	extMarkdown       = []string{".md", ".markdown", ".mdown", ".adoc", ".txt"}
+	extExcluded       = []string{".git", ".idea", ".directory"}
+	filenameBlacklist = []string{".directory"}
 
 	// global vars
 	dirPath     string
@@ -120,6 +121,11 @@ func main() {
 					// log.Println("not markdown file, continuing...")
 					continue
 				}
+				for _, n := range filenameBlacklist {
+					if strings.Contains(event.Path(), n) {
+						continue
+					}
+				}
 				f := getFilePathFromParam(event.Path())
 				setCurrentFile(f)
 				m, e := getReadFile(f)
@@ -211,9 +217,15 @@ func getLastUpdated(path string) (filename string) {
 	var latestMod time.Time
 	var latestModFile string
 	var found bool
+outer:
 	for _, ff := range fs {
 		if ff.IsDir() {
 			continue
+		}
+		for _, n := range filenameBlacklist {
+			if strings.Contains(ff.Name(), n) {
+				continue outer
+			}
 		}
 		if !filepathMatches(ff.Name(), extMarkdown) {
 			continue
@@ -224,8 +236,17 @@ func getLastUpdated(path string) (filename string) {
 			latestModFile = ff.Name()
 		}
 	}
+
 	if !found {
-		latestModFile = fs[0].Name()
+	outera:
+		for i := range fs {
+			for _, n := range filenameBlacklist {
+				if strings.Contains(fs[i].Name(), n) {
+					continue outera
+				}
+			}
+			return fs[i].Name()
+		}
 	}
 	return latestModFile
 }
