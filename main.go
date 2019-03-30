@@ -175,7 +175,6 @@ func main() {
 	// r.Static("/node_modules/primer-css/build", filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "rotblauer", "wmmd", "node_modules/primer-css/build"))
 
 	boxAssets := packr.New("assets", "./assets")
-	primerAssets := packr.New("primer", "./node_modules/primer-css/build")
 
 	r.GET("/", func(c echo.Context) error {
 		b, err := boxAssets.Find("index.html")
@@ -190,21 +189,6 @@ func main() {
 		log.Println(c.ParamValues())
 		if len(c.ParamValues()) > 0 {
 			b, err := boxAssets.Find(c.ParamValues()[0])
-			if err != nil {
-				log.Println("NOTOK")
-				return err
-			}
-			log.Println("OK")
-			return c.HTMLBlob(200, b)
-		}
-		return c.HTMLBlob(404, nil)
-	})
-
-	r.GET("/node_modules/primer-css/build/*", func(c echo.Context) error {
-		log.Println(c.Path())
-		log.Println(c.ParamValues())
-		if len(c.ParamValues()) > 0 {
-			b, err := primerAssets.Find(c.ParamValues()[0])
 			if err != nil {
 				log.Println("NOTOK")
 				return err
