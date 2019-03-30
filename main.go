@@ -22,6 +22,8 @@ import (
 	"github.com/rjeczalik/notify"
 	diff "github.com/sergi/go-diff/diffmatchpatch"
 	"github.com/shurcooL/github_flavored_markdown"
+
+	"github.com/gobuffalo/packr/v2"
 )
 
 var (
@@ -60,6 +62,8 @@ func init() {
 }
 
 func main() {
+
+	log.Println("running wmmd v1")
 	flag.Parse()
 	dirPath = mustMakeDirPath()
 	mm := melody.New()
@@ -164,10 +168,53 @@ func main() {
 	// Echo is polite because it prioritizes these paths, so they can be overlapping,
 	// ie. ":filename" overlaps everything except /
 	r := echo.New()
-	r.File("/", filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "rotblauer", "wmmd", "index.html"))
+
+	// r.File("/", filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "rotblauer", "wmmd", "index.html"))
 	// Static assets.
-	r.Static("/assets", filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "rotblauer", "wmmd", "assets"))
-	r.Static("/node_modules/primer-css/build", filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "rotblauer", "wmmd", "node_modules/primer-css/build"))
+	// r.Static("/assets", filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "rotblauer", "wmmd", "assets"))
+	// r.Static("/node_modules/primer-css/build", filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "rotblauer", "wmmd", "node_modules/primer-css/build"))
+
+	boxAssets := packr.New("assets", "./assets")
+	primerAssets := packr.New("primer", "./node_modules/primer-css/build")
+
+	r.GET("/", func(c echo.Context) error {
+		b, err := boxAssets.Find("index.html")
+		if err != nil {
+			return err
+		}
+		return c.HTMLBlob(200, b)
+	})
+
+	r.GET("/assets/*", func(c echo.Context) error {
+		log.Println(c.Path())
+		log.Println(c.ParamValues())
+		if len(c.ParamValues()) > 0 {
+			b, err := boxAssets.Find(c.ParamValues()[0])
+			if err != nil {
+				log.Println("NOTOK")
+				return err
+			}
+			log.Println("OK")
+			return c.HTMLBlob(200, b)
+		}
+		return c.HTMLBlob(404, nil)
+	})
+
+	r.GET("/node_modules/primer-css/build/*", func(c echo.Context) error {
+		log.Println(c.Path())
+		log.Println(c.ParamValues())
+		if len(c.ParamValues()) > 0 {
+			b, err := primerAssets.Find(c.ParamValues()[0])
+			if err != nil {
+				log.Println("NOTOK")
+				return err
+			}
+			log.Println("OK")
+			return c.HTMLBlob(200, b)
+		}
+		return c.HTMLBlob(404, nil)
+	})
+
 	// Websocket.
 	r.GET("/x/0", func(c echo.Context) error {
 		mm.HandleRequest(c.Response(), c.Request())
