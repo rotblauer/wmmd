@@ -1,5 +1,6 @@
 # WMMD: Weapon of Mass Markdown
 
+
 > Delivers live-reloaded markdown files from a directory to your browser,
 watching recursively for changes to render the one you're working on.
 
@@ -58,6 +59,7 @@ category: Documentation
 info: The first instance of these two '---' lines and anything between them will not be rendered.
 ---
 ```
+
 
 #### Wiki mode
 Press `w`, or click the light gray button in the top right,

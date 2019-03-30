@@ -27,7 +27,7 @@ import (
 var (
 	extResources = []string{".png", ".jpg", ".jpeg", ".svg", ".tiff", ".gif"}
 	extMarkdown  = []string{".md", ".markdown", ".mdown", ".adoc", ".txt"}
-	extExcluded  = []string{".git", ".idea"}
+	extExcluded  = []string{".git", ".idea", ".directory"}
 
 	// global vars
 	dirPath     string
@@ -138,9 +138,21 @@ func main() {
 		}
 	}()
 
-	if err := notify.Watch(filepath.Join(dirPath, "..."), watcher, notify.All); err != nil {
-		log.Fatal(err)
+	watch := func() error {
+		if err := notify.Watch(filepath.Join(dirPath, "..."), watcher, notify.All); err != nil {
+			return err
+		}
+		return nil
 	}
+
+	go func() {
+		for {
+			if err := watch(); err != nil {
+				log.Println("watch err", err)
+			}
+		}
+	}()
+
 	defer notify.Stop(watcher)
 
 	// Echo is polite because it prioritizes these paths, so they can be overlapping,
