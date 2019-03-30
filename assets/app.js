@@ -45,8 +45,19 @@ function scrollToo(el, duration) {
 
 function highlighter() {
 	document.querySelectorAll('div.highlight').forEach((block) => {
-		console.log("highlighting block");
-		hljs.highlightBlock(block);
+		var t = $(block).children('pre').first().text();
+		$(block).children('pre').first().text('');
+		$(block).children('pre').first().append($('<code>').text(t));
+		for (var i = 0; i < block.classList.length; i++) {
+			var c = block.classList[i];
+			if (c.indexOf("highlight-") >= 0) {
+				var l = c.replace("highlight-", "");
+				$(block).find('code').first().addClass(l);
+			}
+		}
+		$(block).removeClass("highlight");
+		console.log("highlighting block", block);
+		hljs.highlightBlock($(block).find('code').first()[0]);
 	});
 }
 
